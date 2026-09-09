@@ -4162,19 +4162,6 @@ debug_printf("NEXT AFTER LOAD %S\n",fd->cFileName);
 					rw = 0;
 					rh = 0;
 
-					// controls.
-					/*
-					if (_viv_get_controls_high())
-					{
-						rect.left = 0;
-						rect.top = high;
-						rect.right = wide;
-						rect.bottom = rect.top + _viv_get_controls_high();
-						
-						FillRect(ps.hdc,&rect,(HBRUSH)(COLOR_WINDOW+1));
-						ExcludeClipRect(ps.hdc,rect.left,rect.top,rect.right,rect.bottom);
-					}
-				*/
 					if (_viv_frame_count)
 					{
 						HDC mem_hdc;
@@ -5613,11 +5600,7 @@ static int _viv_main(int nCmdShow)
 	return 0;
 }
 
-int APIENTRY wWinMain(
-	_In_ HINSTANCE hInstance,
-	_In_opt_ HINSTANCE hPrevInstance,
-	_In_ LPWSTR lpCmdLine,
-	_In_ int nShowCmd)
+int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nShowCmd)
 {
 	return _viv_main(nShowCmd);
 }
@@ -6733,8 +6716,6 @@ debug_printf("toggle fullscreen %d\n",!_viv_is_fullscreen);
 			{
 				for(zoom_index=0;zoom_index<_VIV_ZOOM_MAX;zoom_index++)
 				{
-					// debug_printf("%d %d\n",zoom_wide_array[zoom_index] , monitor_rect.right - monitor_rect.left);
-				
 					if ((zoom_wide_array[zoom_index] > monitor_rect.right - monitor_rect.left) || (zoom_high_array[zoom_index] > monitor_rect.bottom - monitor_rect.top))
 					{
 						break;
@@ -6762,8 +6743,6 @@ debug_printf("toggle fullscreen %d\n",!_viv_is_fullscreen);
 					
 					_viv_get_render_size(&rw,&rh);
 					
-					// debug_printf("%d %d\n",zoom_wide_array[zoom_index] , monitor_rect.right - monitor_rect.left);
-				
 					if ((rw > old_rw) || (rh > old_rh))
 					{
 						break;
@@ -6780,7 +6759,6 @@ debug_printf("toggle fullscreen %d\n",!_viv_is_fullscreen);
 				}
 			}
 			
-//			debug_printf("ZOOM OFFSET %d\n",_viv_fullscreen_zoom_offset);
 		}
 	
 		_viv_zoom_pos -= _viv_fullscreen_zoom_offset;
@@ -6793,8 +6771,6 @@ debug_printf("toggle fullscreen %d\n",!_viv_is_fullscreen);
 
 	_viv_on_size();
 	
-//	InvalidateRect(_viv_hwnd,0,FALSE);
-
 	// update mouseover
 	// so we show the cursor corectly in
 	// _viv_update_show_cursor
@@ -7808,7 +7784,6 @@ static void _viv_open_file_location(void)
 	}
 }
 
-
 static void _viv_properties(void)
 {
 	if (*_viv_current_fd->cFileName)
@@ -7873,7 +7848,6 @@ static const char *_viv_get_copydata_string(const char *p,const char *e,wchar_t 
 	
 	return p;
 }
-
 
 static void _viv_blank(void)
 {
@@ -8286,7 +8260,6 @@ static INT_PTR CALLBACK _viv_options_controls_proc(HWND hwnd,UINT msg,WPARAM wPa
 	return FALSE;
 }
 
-
 static INT_PTR CALLBACK _viv_options_view_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
@@ -8402,7 +8375,6 @@ static INT_PTR CALLBACK _viv_options_view_proc(HWND hwnd, UINT msg, WPARAM wPara
 
 	return FALSE;
 }
-
 
 static void _viv_options_treeview_changed(HWND hwnd)
 {
@@ -11033,7 +11005,7 @@ static void _viv_status_update(void)
 {
 	if (_viv_status_hwnd)
 	{
-		int part_array[6];
+		int part_array[7];
 		RECT rect;
 		wchar_t widebuf[STRING_SIZE];
 		wchar_t highbuf[STRING_SIZE];
@@ -11041,98 +11013,102 @@ static void _viv_status_update(void)
 		wchar_t frame_buf[STRING_SIZE];
 		wchar_t pixel_pos_buf[STRING_SIZE];
 		wchar_t pixel_rgb_buf[STRING_SIZE];
-		const wchar_t *preload_buf;
+		wchar_t version_buf[64];
+		const wchar_t* preload_buf;
 		HDC hdc;
 		int dimension_wide;
 		int frame_wide;
 		int preload_wide;
 		int pixel_pos_wide;
 		int pixel_rgb_wide;
+		int version_wide;
 		int minwide;
-		
-		GetClientRect(_viv_hwnd,&rect);
-		
+
+		GetClientRect(_viv_hwnd, &rect);
+
+		string_printf(version_buf, "Ver: %d.%d.%d Build: %d", VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, VERSION_BUILD);
+
 		preload_buf = 0;
 		*pixel_pos_buf = 0;
 		*pixel_rgb_buf = 0;
-		
+
 		if ((_viv_image_wide) && (_viv_image_high))
 		{
-			string_format_number(widebuf,_viv_image_wide);
-			string_format_number(highbuf,_viv_image_high);
-		
-			string_copy(dimension_buf,widebuf);
-			string_cat_utf8(dimension_buf,(const utf8_t *)" x ");
-			string_cat(dimension_buf,highbuf);
+			string_format_number(widebuf, _viv_image_wide);
+			string_format_number(highbuf, _viv_image_high);
+
+			string_copy(dimension_buf, widebuf);
+			string_cat_utf8(dimension_buf, (const utf8_t*)" x ");
+			string_cat(dimension_buf, highbuf);
 		}
 		else
 		{
-			string_copy_utf8(dimension_buf,(const utf8_t *)"");
+			string_copy_utf8(dimension_buf, (const utf8_t*)"");
 		}
 
 		if (*_viv_frame_fd->cFileName)
 		{
 			LARGE_INTEGER size;
-			
+
 			size.HighPart = _viv_frame_fd->nFileSizeHigh;
 			size.LowPart = _viv_frame_fd->nFileSizeLow;
-			
+
 			if (size.QuadPart)
 			{
 				NUMBERFMT numberfmt;
-				
+
 				if (*dimension_buf)
 				{
-					string_cat_utf8(dimension_buf," ");
+					string_cat_utf8(dimension_buf, " ");
 				}
-				
-				string_cat_utf8(dimension_buf,"(");
-				string_format_number(widebuf,(size.QuadPart + 1023) / 1024);
-				
+
+				string_cat_utf8(dimension_buf, "(");
+				string_format_number(widebuf, (size.QuadPart + 1023) / 1024);
+
 				numberfmt.NumDigits = 0;
 				numberfmt.LeadingZero = 0;
 				numberfmt.Grouping = 3;
 				numberfmt.lpThousandSep = L",";
 				numberfmt.lpDecimalSep = L".";
 				numberfmt.NegativeOrder = 0;
-	    
-    			GetNumberFormat(LOCALE_USER_DEFAULT,0,widebuf,&numberfmt,highbuf,STRING_SIZE);
-				
-				string_cat(dimension_buf,highbuf);
-				string_cat_utf8(dimension_buf," KB)");
+
+				GetNumberFormat(LOCALE_USER_DEFAULT, 0, widebuf, &numberfmt, highbuf, STRING_SIZE);
+
+				string_cat(dimension_buf, highbuf);
+				string_cat_utf8(dimension_buf, " KB)");
 			}
 		}
-		
+
 		if (_viv_frame_count > 1)
 		{
 			int frame_pos;
-			string_format_number(highbuf,_viv_frame_count);
+			string_format_number(highbuf, _viv_frame_count);
 
-			string_copy_utf8(frame_buf,(const utf8_t *)"");
-			
+			string_copy_utf8(frame_buf, (const utf8_t*)"");
+
 			if (config_frame_minus)
 			{
 				frame_pos = _viv_frame_count - (_viv_frame_position);
-				string_cat_utf8(frame_buf,(const utf8_t *)"- ");
+				string_cat_utf8(frame_buf, (const utf8_t*)"- ");
 			}
 			else
 			{
 				frame_pos = _viv_frame_position + 1;
 			}
 
-			string_format_number(widebuf,frame_pos);
-			
-			string_cat(frame_buf,widebuf);
-			string_cat_utf8(frame_buf,(const utf8_t *)" / ");
-			string_cat(frame_buf,highbuf);
+			string_format_number(widebuf, frame_pos);
+
+			string_cat(frame_buf, widebuf);
+			string_cat_utf8(frame_buf, (const utf8_t*)" / ");
+			string_cat(frame_buf, highbuf);
 		}
 		else
 		{
-			string_copy_utf8(frame_buf,(const utf8_t *)"");
+			string_copy_utf8(frame_buf, (const utf8_t*)"");
 		}
-		
+
 		// this is just noise..
-		
+
 		if ((_viv_load_is_preload) && (_viv_preload_state == 0) && (!_viv_should_activate_preload_on_load) && (!_viv_load_image_terminate) && (!_viv_preload_frame_loaded_count))
 		{
 			preload_buf = L"PRELOAD";
@@ -11141,36 +11117,45 @@ static void _viv_status_update(void)
 		if (config_pixel_info)
 		{
 			if ((_viv_src_pixel_x >= 0) && (_viv_src_pixel_y >= 0))
-			{		
-				string_printf(pixel_pos_buf,"POS: %d,%d",_viv_src_pixel_x,_viv_src_pixel_y);
-				string_printf(pixel_rgb_buf,"RGB: %d,%d,%d",_viv_src_pixel_r,_viv_src_pixel_g,_viv_src_pixel_b);
+			{
+				string_printf(pixel_pos_buf, "POS: %d,%d", _viv_src_pixel_x, _viv_src_pixel_y);
+				string_printf(pixel_rgb_buf, "RGB: %d,%d,%d", _viv_src_pixel_r, _viv_src_pixel_g, _viv_src_pixel_b);
 			}
 		}
-		
+
 		dimension_wide = 0;
 		frame_wide = 0;
 		preload_wide = 0;
 		pixel_pos_wide = 0;
 		pixel_rgb_wide = 0;
+		version_wide = 0;
 		minwide = (72 * os_logical_wide) / 96;
 
 		hdc = GetDC(_viv_status_hwnd);
 		if (hdc)
 		{
 			HFONT hfont;
-			
-			hfont = (HFONT)SendMessage(_viv_status_hwnd,WM_GETFONT,0,0);
+
+			hfont = (HFONT)SendMessage(_viv_status_hwnd, WM_GETFONT, 0, 0);
 			if (hfont)
 			{
 				SIZE size;
 				HGDIOBJ last_font;
-				
-				last_font = SelectObject(hdc,hfont);
-				
-				if (GetTextExtentPoint32(hdc,dimension_buf,string_length(dimension_buf),&size))
+
+				last_font = SelectObject(hdc, hfont);
+
+				if (GetTextExtentPoint32(hdc, version_buf, string_length(version_buf), &size))
+				{
+					version_wide = size.cx + GetSystemMetrics(SM_CXEDGE) * 5;
+					if (version_wide < 150)
+					{
+						version_wide = 150;
+					}
+				}
+
+				if (GetTextExtentPoint32(hdc, dimension_buf, string_length(dimension_buf), &size))
 				{
 					dimension_wide = size.cx + GetSystemMetrics(SM_CXEDGE) * 5;
-					
 					if (dimension_wide < minwide)
 					{
 						dimension_wide = minwide;
@@ -11179,10 +11164,9 @@ static void _viv_status_update(void)
 
 				if (*frame_buf)
 				{
-					if (GetTextExtentPoint32(hdc,frame_buf,string_length(frame_buf),&size))
+					if (GetTextExtentPoint32(hdc, frame_buf, string_length(frame_buf), &size))
 					{
 						frame_wide = size.cx + GetSystemMetrics(SM_CXEDGE) * 5;
-						
 						if (frame_wide < minwide)
 						{
 							frame_wide = minwide;
@@ -11192,7 +11176,7 @@ static void _viv_status_update(void)
 
 				if (preload_buf)
 				{
-					if (GetTextExtentPoint32(hdc,preload_buf,string_length(preload_buf),&size))
+					if (GetTextExtentPoint32(hdc, preload_buf, string_length(preload_buf), &size))
 					{
 						preload_wide = size.cx + GetSystemMetrics(SM_CXEDGE) * 5;
 					}
@@ -11200,7 +11184,7 @@ static void _viv_status_update(void)
 
 				if (*pixel_pos_buf)
 				{
-					if (GetTextExtentPoint32(hdc,pixel_pos_buf,string_length(pixel_pos_buf),&size))
+					if (GetTextExtentPoint32(hdc, pixel_pos_buf, string_length(pixel_pos_buf), &size))
 					{
 						pixel_pos_wide = size.cx + GetSystemMetrics(SM_CXEDGE) * 5;
 					}
@@ -11208,132 +11192,161 @@ static void _viv_status_update(void)
 
 				if (*pixel_rgb_buf)
 				{
-					if (GetTextExtentPoint32(hdc,pixel_rgb_buf,string_length(pixel_rgb_buf),&size))
+					if (GetTextExtentPoint32(hdc, pixel_rgb_buf, string_length(pixel_rgb_buf), &size))
 					{
 						pixel_rgb_wide = size.cx + GetSystemMetrics(SM_CXEDGE) * 5;
 					}
 				}
 
-				SelectObject(hdc,last_font);
+				SelectObject(hdc, last_font);
 			}
-			
-			ReleaseDC(_viv_status_hwnd,hdc);
+
+			ReleaseDC(_viv_status_hwnd, hdc);
 		}
-		
+
 		// add size box
 		dimension_wide += GetSystemMetrics(SM_CXVSCROLL) + GetSystemMetrics(SM_CXBORDER);
-		
-		{
-			int parti;
-			int part_wide;
-			
-			parti = 0;
-			part_wide = (rect.right - rect.left) - dimension_wide - frame_wide - preload_wide - pixel_pos_wide - pixel_rgb_wide;
 
+		{
+			int parti = 0;
+			int part_wide = 120;
 			part_array[parti] = part_wide;
-			if (part_array[parti] < 0)
-			{
-				part_array[parti] = 0;
-			}
 			parti++;
-		
+
+			part_wide = (rect.right - rect.left) - 120 - dimension_wide - frame_wide - preload_wide - pixel_pos_wide - pixel_rgb_wide;
+			if (part_wide < 0) part_wide = 0;
+			part_array[parti] = part_wide;
+			parti++;
+
 			if (preload_buf)
 			{
 				part_wide += preload_wide;
 				part_array[parti] = part_wide;
 				parti++;
 			}
-			
+
 			if (pixel_pos_buf)
 			{
 				part_wide += pixel_pos_wide;
 				part_array[parti] = part_wide;
 				parti++;
 			}
-			
+
 			if (pixel_rgb_buf)
 			{
 				part_wide += pixel_rgb_wide;
 				part_array[parti] = part_wide;
 				parti++;
 			}
-			
+
 			part_wide += frame_wide;
 			part_array[parti] = part_wide;
 			parti++;
-			
+
 			part_array[parti] = -1;
 			parti++;
-			
-			SendMessage(_viv_status_hwnd,SB_SETPARTS,parti,(LPARAM)part_array);
+
+			SendMessage(_viv_status_hwnd, SB_SETPARTS, parti, (LPARAM)part_array);
 		}
 
 		{
-			wchar_t *text;
-			
-			text =  L"";
-			
+			wchar_t* text;
+
+			text = L"";
+
 			if (_viv_status_temp_text)
 			{
 				text = _viv_status_temp_text;
 			}
 			else
-			if ((_viv_load_image_thread) && ((!_viv_load_is_preload) || (_viv_should_activate_preload_on_load)))
-			{	
-				text =  L"Loading...";
-			}
-			else
-			if (_viv_file_not_found)
-			{
-				text = L"File not found.";
-			}
-			else
-			if (_viv_load_failed)
-			{
-				text = L"Failed to load image.";
-			}
-			else
-			if (_viv_is_slideshow)
-			{
-				text =  L"Slideshow playing";
-			}
-		
-			_viv_status_set(0,text);
+				if ((_viv_load_image_thread) && ((!_viv_load_is_preload) || (_viv_should_activate_preload_on_load)))
+				{
+					text = L"Loading...";
+				}
+				else
+					if (_viv_file_not_found)
+					{
+						text = L"File not found.";
+					}
+					else
+						if (_viv_load_failed)
+						{
+							text = L"Failed to load image.";
+						}
+						else
+							if (_viv_is_slideshow)
+							{
+								text = L"Slideshow playing";
+							}
+
+			_viv_status_set(0, text);
 		}
-		
+
 		{
-			int parti;
-			
-			parti = 1;
-			
+			int parti = 0;
+
+			// 1. Первый сегмент - ВЕРСИЯ (всегда слева)
+			_viv_status_set(parti, version_buf);
+			parti++;
+
+			// 2. Второй сегмент - основной текст (статус)
+			{
+				wchar_t* text = L"";
+
+				if (_viv_status_temp_text)
+				{
+					text = _viv_status_temp_text;
+				}
+				else if ((_viv_load_image_thread) && ((!_viv_load_is_preload) || (_viv_should_activate_preload_on_load)))
+				{
+					text = L"Loading...";
+				}
+				else if (_viv_file_not_found)
+				{
+					text = L"File not found.";
+				}
+				else if (_viv_load_failed)
+				{
+					text = L"Failed to load image.";
+				}
+				else if (_viv_is_slideshow)
+				{
+					text = L"Slideshow playing";
+				}
+
+				_viv_status_set(parti, text);
+			}
+			parti++;
+
+			// 3-6. Остальные сегменты
 			if (preload_buf)
 			{
-				_viv_status_set(parti,preload_buf);
+				_viv_status_set(parti, preload_buf);
 				parti++;
 			}
-			
+
 			if (pixel_pos_buf)
 			{
-				_viv_status_set(parti,pixel_pos_buf);
+				_viv_status_set(parti, pixel_pos_buf);
 				parti++;
 			}
-			
+
 			if (pixel_rgb_buf)
 			{
-				_viv_status_set(parti,pixel_rgb_buf);
+				_viv_status_set(parti, pixel_rgb_buf);
 				parti++;
 			}
-			
-			_viv_status_set(parti,frame_buf);
+
+			_viv_status_set(parti, frame_buf);
 			parti++;
-			
-			_viv_status_set(parti,dimension_buf);
+
+			_viv_status_set(parti, dimension_buf);
 			parti++;
 		}
 	}
 }
 
-static void _viv_status_set(int part,const wchar_t *text)
+static void _viv_status_set(int part, const wchar_t *text)
 {
 	wchar_t oldtext[STRING_SIZE];
 	
@@ -15137,87 +15150,3 @@ static void _viv_open_preload(void)
 		_viv_preload_next();
 	}	
 }
-
-/*
-static void _viv_get_tooltip(void)
-{
-	if (_viv_tooltip_hwnd)
-	{
-		return;
-	}
-	
-	_viv_tooltip_hwnd = CreateWindowExA(
-		WS_EX_TOPMOST|WS_EX_NOACTIVATE,
-		(const utf8_t *)TOOLTIPS_CLASSA,
-		(const utf8_t *)"",
-		WS_POPUP | TTS_ALWAYSTIP | TTS_NOPREFIX | TTS_NOANIMATE | WS_GROUP,
-		0,0,0,0,
-		0,0,os_hinstance,0);
-		
-	SendMessage(_viv_tooltip_hwnd,TTM_SETDELAYTIME,TTDT_INITIAL,MAKELONG(0,0));
-}
-
-static void _viv_tooltip_hide(void)
-{
-	if (_viv_tooltip_hwnd)
-	{
-		DestroyWindow(_viv_tooltip_hwnd);
-		
-		_viv_tooltip_hwnd = 0;
-	}
-}
-
-static void _viv_tooltip_update(void)
-{	
-	wchar_t pixel_info_buf[STRING_SIZE];
-
-	_viv_get_tooltip();
-	
-	string_printf(pixel_info_buf,"%d,%d: %d,%d,%d",_viv_src_pixel_x,_viv_src_pixel_y,_viv_src_pixel_r,_viv_src_pixel_g,_viv_src_pixel_b);
-
-	if (_viv_tooltip_hwnd)
-	{
-		TOOLINFO ti;
-		DWORD message_id;
-		
-		os_zero_memory(&ti,sizeof(TOOLINFO));
-		ti.cbSize = sizeof(TOOLINFO);
-		ti.uFlags = TTF_SUBCLASS | TTF_TRANSPARENT | TTF_IDISHWND;
-		ti.hwnd = _viv_hwnd;
-		ti.uId = (UINT_PTR)_viv_hwnd;
-		
-		if (SendMessage(_viv_tooltip_hwnd,TTM_GETTOOLINFO,0,(LPARAM)&ti))
-		{
-			message_id = TTM_UPDATETIPTEXTW;
-		}
-		else
-		{
-			message_id = TTM_ADDTOOLW;
-		}
-
-		os_zero_memory(&ti,sizeof(TOOLINFO));
-		ti.cbSize = sizeof(TOOLINFO);
-		ti.uFlags = TTF_SUBCLASS | TTF_TRANSPARENT | TTF_IDISHWND;
-		ti.hwnd = _viv_hwnd;
-		ti.uId = (UINT_PTR)_viv_hwnd;
-		ti.lpszText = pixel_info_buf;
-
-		SendMessage(_viv_tooltip_hwnd,message_id,0,(LPARAM)&ti);
-		SendMessage(_viv_tooltip_hwnd,TTM_TRACKACTIVATE,TRUE,(LPARAM)&ti);
-		
-		_viv_tooltip_update_track_position();
-	}
-}
-
-static void _viv_tooltip_update_track_position(void)
-{
-	if (_viv_tooltip_hwnd)
-	{
-		POINT cursor_point;
-
-		GetCursorPos(&cursor_point);
-		
-		SendMessage(_viv_tooltip_hwnd,TTM_TRACKPOSITION,0,(LPARAM)MAKELONG(cursor_point.x,cursor_point.y));
-	}
-}
-*/
