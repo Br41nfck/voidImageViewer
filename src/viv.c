@@ -165,6 +165,8 @@
 
 #define _VIV_ZOOM_MAX 16
 
+#define VIV_ID_EDIT_COPY_DISPLAY_AREA		1149
+
 #define BCM_SETSHIELD	0x0000160C
 
 #ifdef VERSION_X64
@@ -365,6 +367,7 @@ typedef struct _viv_webp_s
 #define _VIV_DST_ZOOM_ONE	82
 #define _VIV_OPTIONS_PAGE_COUNT	(sizeof(_viv_options_dialog_ids) / sizeof(int))
 #define _VIV_SLIDESHOW_RATE_PRESET_COUNT (sizeof(_viv_slideshow_rate_presets) / sizeof(WORD))
+
 //static BYTE _viv_is_alt = 0;
 //static HWND _viv_tooltip_hwnd = 0;
 //static float _viv_animation_rates[] = {0.085899f,0.107374f,0.134218f,0.167772f,0.209715f,0.262144f,0.327680f,0.409600f,0.512000f,0.640000f,0.800000f,1.000000f,1.250000f,1.562500f,1.953125f,2.441406f,3.051758f,3.814697f,4.768372f,5.960464f,7.450581f,9.313226f}; // natural curve.
@@ -734,6 +737,7 @@ static _viv_command_t _viv_commands[] =
 	{"&Copy",MF_STRING,_VIV_MENU_EDIT,VIV_ID_EDIT_COPY},
 	{"Copy Filename",MF_STRING|MF_OWNERDRAW,_VIV_MENU_EDIT,VIV_ID_EDIT_COPY_FILENAME},
 	{"Cop&y Image",MF_STRING,_VIV_MENU_EDIT,VIV_ID_EDIT_COPY_IMAGE},
+	{"Cop&y Display Area", MF_STRING, _VIV_MENU_EDIT, VIV_ID_EDIT_COPY_DISPLAY_AREA},
 	{"&Paste",MF_STRING|MF_OWNERDRAW,_VIV_MENU_EDIT,VIV_ID_EDIT_PASTE},
 	{0,MF_SEPARATOR,_VIV_MENU_EDIT,0},
 	{"Rotate &Cloc&kwise",MF_STRING,_VIV_MENU_EDIT,VIV_ID_EDIT_ROTATE_90},
@@ -892,10 +896,10 @@ _viv_default_key_t _viv_default_keys[] =
 	{VIV_ID_FILE_DELETE_PERMANENTLY,CONFIG_KEYFLAG_SHIFT | VK_DELETE},
 	{VIV_ID_FILE_RENAME,VK_F2},
 	{VIV_ID_FILE_EXIT,CONFIG_KEYFLAG_CTRL | 'Q'},
-	{VIV_ID_EDIT_CUT,CONFIG_KEYFLAG_CTRL | 'X'},
-	{VIV_ID_EDIT_COPY,CONFIG_KEYFLAG_CTRL | 'C'},
-	{VIV_ID_EDIT_COPY_FILENAME,CONFIG_KEYFLAG_CTRL | CONFIG_KEYFLAG_SHIFT | 'C'},
-	{VIV_ID_EDIT_PASTE,CONFIG_KEYFLAG_CTRL | 'V'},
+	{VIV_ID_EDIT_CUT, CONFIG_KEYFLAG_CTRL | 'X'},
+	{VIV_ID_EDIT_COPY_DISPLAY_AREA, CONFIG_KEYFLAG_CTRL | 'C'},
+	{VIV_ID_EDIT_COPY_FILENAME, CONFIG_KEYFLAG_CTRL | CONFIG_KEYFLAG_SHIFT | 'C'},
+	{VIV_ID_EDIT_PASTE, CONFIG_KEYFLAG_CTRL | 'V'},
 	{VIV_ID_VIEW_PRESET_1,'1'},
 	{VIV_ID_VIEW_PRESET_2,'2'},
 	{VIV_ID_VIEW_PRESET_3,'3'},
@@ -1026,6 +1030,7 @@ WORD _viv_context_menu_items[] =
 	VIV_ID_VIEW_OPTIONS,
 	0,
 	VIV_ID_FILE_EXIT,
+	VIV_ID_EDIT_COPY_DISPLAY_AREA,
 };
 
 #define _VIV_CONEXT_MENU_ITEM_COUNT	(sizeof(_viv_context_menu_items) / sizeof(WORD))
@@ -1128,6 +1133,186 @@ HMODULE LoadUnicowsProc(void)
 	return NULL;
 }
 
+static void _viv_copy_display_area(void)
+{
+	if (_viv_frame_count == 0 || _viv_frames == NULL)
+	{
+		debug_printf("_viv_copy_display_area: No image loaded\n");
+		return;
+	}
+
+	RECT client_rect;
+	int wide, high;
+	int rx, ry, rw, rh;
+	int src_x, src_y, src_w, src_h;
+	HDC screen_hdc, mem_hdc;
+	HBITMAP hbitmap;
+	HGDIOBJ old_bitmap;
+
+	GetClientRect(_viv_hwnd, &client_rect);
+	wide = client_rect.right - client_rect.left;
+	high = client_rect.bottom - client_rect.top - _viv_get_status_high() - _viv_get_controls_high();
+
+	debug_printf("_viv_copy_display_area: wide=%d, high=%d\n", wide, high);
+
+	if (wide <= 0 || high <= 0) return;
+
+	_viv_get_render_size(&rw, &rh);
+	rw = (int)(rw * _viv_dst_zoom_values[_viv_dst_zoom_x_pos]);
+	rh = (int)(rh * _viv_dst_zoom_values[_viv_dst_zoom_y_pos]);
+
+	rx = (((_viv_dst_pos_x - 250) * (wide * 2)) / 1000) - (rw / 2) - _viv_view_x;
+	ry = (((_viv_dst_pos_y - 250) * (high * 2)) / 1000) - (rh / 2) - _viv_view_y;
+
+	debug_printf("_viv_copy_display_area: rx=%d, ry=%d, rw=%d, rh=%d\n", rx, ry, rw, rh);
+
+	src_x = rx;
+	src_y = ry;
+	src_w = rw;
+	src_h = rh;
+
+	if (src_x < 0) { src_w += src_x; src_x = 0; }
+	if (src_y < 0) { src_h += src_y; src_y = 0; }
+	if (src_x + src_w > wide) src_w = wide - src_x;
+	if (src_y + src_h > high) src_h = high - src_y;
+
+	if (src_w <= 0 || src_h <= 0)
+	{
+		debug_printf("_viv_copy_display_area: Nothing visible\n");
+		return;
+	}
+
+	screen_hdc = GetDC(_viv_hwnd);
+	if (!screen_hdc)
+	{
+		debug_printf("_viv_copy_display_area: GetDC failed\n");
+		return;
+	}
+
+	mem_hdc = CreateCompatibleDC(screen_hdc);
+	if (!mem_hdc)
+	{
+		debug_printf("_viv_copy_display_area: CreateCompatibleDC failed\n");
+		ReleaseDC(_viv_hwnd, screen_hdc);
+		return;
+	}
+
+	hbitmap = CreateCompatibleBitmap(screen_hdc, src_w, src_h);
+	if (!hbitmap)
+	{
+		debug_printf("_viv_copy_display_area: CreateCompatibleBitmap failed\n");
+		DeleteDC(mem_hdc);
+		ReleaseDC(_viv_hwnd, screen_hdc);
+		return;
+	}
+
+	old_bitmap = SelectObject(mem_hdc, hbitmap);
+
+	if (!BitBlt(mem_hdc, 0, 0, src_w, src_h, screen_hdc, src_x, src_y, SRCCOPY))
+	{
+		debug_printf("_viv_copy_display_area: BitBlt failed, error=%d\n", GetLastError());
+	}
+	else
+	{
+		debug_printf("_viv_copy_display_area: BitBlt succeeded\n");
+	}
+
+	SelectObject(mem_hdc, old_bitmap);
+	DeleteDC(mem_hdc);
+	ReleaseDC(_viv_hwnd, screen_hdc);
+
+	BITMAP bm;
+	if (!GetObject(hbitmap, sizeof(BITMAP), &bm))
+	{
+		debug_printf("_viv_copy_display_area: GetObject failed\n");
+		DeleteObject(hbitmap);
+		return;
+	}
+
+	BITMAPINFOHEADER bi = { 0 };
+	bi.biSize = sizeof(BITMAPINFOHEADER);
+	bi.biWidth = bm.bmWidth;
+	bi.biHeight = -bm.bmHeight;
+	bi.biPlanes = 1;
+	bi.biBitCount = bm.bmBitsPixel;
+	bi.biCompression = BI_RGB;
+
+	if (bi.biBitCount < 24)
+	{
+		bi.biBitCount = 24;
+	}
+
+	DWORD dwBmpSize = ((bm.bmWidth * bi.biBitCount + 31) / 32) * 4 * bm.bmHeight;
+
+	HDC hdc = GetDC(NULL);
+	if (!hdc)
+	{
+		debug_printf("_viv_copy_display_area: GetDC(NULL) failed\n");
+		DeleteObject(hbitmap);
+		return;
+	}
+
+	HGLOBAL hDIB = GlobalAlloc(GMEM_MOVEABLE, sizeof(BITMAPINFOHEADER) + dwBmpSize);
+	if (!hDIB)
+	{
+		debug_printf("_viv_copy_display_area: GlobalAlloc failed\n");
+		ReleaseDC(NULL, hdc);
+		DeleteObject(hbitmap);
+		return;
+	}
+
+	char* pDIB = (char*)GlobalLock(hDIB);
+	if (!pDIB)
+	{
+		debug_printf("_viv_copy_display_area: GlobalLock failed\n");
+		GlobalFree(hDIB);
+		ReleaseDC(NULL, hdc);
+		DeleteObject(hbitmap);
+		return;
+	}
+
+	memcpy(pDIB, &bi, sizeof(BITMAPINFOHEADER));
+
+	if (!GetDIBits(hdc, hbitmap, 0, bm.bmHeight, pDIB + sizeof(BITMAPINFOHEADER),
+		(BITMAPINFO*)&bi, DIB_RGB_COLORS))
+	{
+		debug_printf("_viv_copy_display_area: GetDIBits failed, error=%d\n", GetLastError());
+		GlobalUnlock(hDIB);
+		GlobalFree(hDIB);
+		ReleaseDC(NULL, hdc);
+		DeleteObject(hbitmap);
+		return;
+	}
+
+	GlobalUnlock(hDIB);
+	ReleaseDC(NULL, hdc);
+	DeleteObject(hbitmap);
+
+	debug_printf("_viv_copy_display_area: DIB created, size=%d bytes\n", dwBmpSize);
+
+	if (OpenClipboard(_viv_hwnd))
+	{
+		EmptyClipboard();
+
+		if (SetClipboardData(CF_DIB, hDIB))
+		{
+			debug_printf("_viv_copy_display_area: SetClipboardData(CF_DIB) succeeded\n");
+		}
+		else
+		{
+			debug_printf("_viv_copy_display_area: SetClipboardData(CF_DIB) failed, error=%d\n", GetLastError());
+			GlobalFree(hDIB);
+		}
+
+		CloseClipboard();
+		debug_printf("_viv_copy_display_area: Clipboard closed\n");
+	}
+	else
+	{
+		debug_printf("_viv_copy_display_area: OpenClipboard failed, error=%d\n", GetLastError());
+		GlobalFree(hDIB);
+	}
+}
 static void _viv_update_titlebar_visibility(void)
 {
 	static int last_show_title = -1;
@@ -1646,6 +1831,8 @@ static void _viv_on_size(void)
 		_viv_toolbar_update_buttons();
 	}
 }
+
+
 
 static void _viv_command(int command_id)
 {
@@ -2325,7 +2512,7 @@ debug_printf("SWP %d %d %d %d\n",rect.left,rect.top,rect.right - rect.left,rect.
 			break;
 			
 		case VIV_ID_EDIT_COPY:
-			_viv_copy(0);
+			_viv_copy_display_area();
 			break;
 
 		case VIV_ID_EDIT_COPY_FILENAME:
@@ -2524,6 +2711,10 @@ debug_printf("SWP %d %d %d %d\n",rect.left,rect.top,rect.right - rect.left,rect.
 		case VIV_ID_FILE_PROPERTIES:
 			_viv_properties();
 			break;
+
+		case VIV_ID_EDIT_COPY_DISPLAY_AREA:
+			_viv_copy_display_area();
+			break;
 			
 		case VIV_ID_EDIT_COPY_TO:
 		case VIV_ID_EDIT_MOVE_TO:
@@ -2583,6 +2774,113 @@ static void _viv_exit(void)
 	_viv_load_image_terminate = 1;
 	config_save_settings(config_appdata);
 	PostQuitMessage(0);
+}
+
+static int _viv_save_clipboard_image_to_file(const wchar_t* filename)
+{
+	if (!OpenClipboard(_viv_hwnd))
+	{
+		debug_printf("_viv_save_clipboard_image_to_file: OpenClipboard failed\n");
+		return 0;
+	}
+
+	HANDLE hDIB = GetClipboardData(CF_DIB);
+	if (!hDIB)
+	{
+		hDIB = GetClipboardData(CF_DIBV5);
+	}
+	if (!hDIB)
+	{
+		hDIB = GetClipboardData(CF_BITMAP);
+	}
+
+	if (!hDIB)
+	{
+		debug_printf("_viv_save_clipboard_image_to_file: No image data in clipboard\n");
+		CloseClipboard();
+		return 0;
+	}
+
+	BITMAPINFOHEADER* pBI = (BITMAPINFOHEADER*)GlobalLock(hDIB);
+	if (!pBI)
+	{
+		debug_printf("_viv_save_clipboard_image_to_file: GlobalLock failed\n");
+		CloseClipboard();
+		return 0;
+	}
+
+	int width = pBI->biWidth;
+	int height = abs(pBI->biHeight);
+	int bitsPerPixel = pBI->biBitCount;
+
+	if (bitsPerPixel < 24) bitsPerPixel = 24;
+
+	HDC hdc = GetDC(NULL);
+	HBITMAP hBitmap = CreateDIBitmap(hdc, pBI, CBM_INIT,
+		(BYTE*)pBI + pBI->biSize + (pBI->biClrUsed * sizeof(RGBQUAD)),
+		(BITMAPINFO*)pBI, DIB_RGB_COLORS);
+	ReleaseDC(NULL, hdc);
+
+	GlobalUnlock(hDIB);
+	CloseClipboard();
+
+	if (!hBitmap)
+	{
+		debug_printf("_viv_save_clipboard_image_to_file: CreateDIBitmap failed\n");
+		return 0;
+	}
+
+	BITMAP bm;
+	GetObject(hBitmap, sizeof(BITMAP), &bm);
+
+	BITMAPFILEHEADER bf = { 0 };
+	bf.bfType = 0x4D42;  // "BM"
+	bf.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
+	bf.bfSize = bf.bfOffBits + ((bm.bmWidth * bm.bmBitsPixel + 31) / 32) * 4 * bm.bmHeight;
+
+	BITMAPINFOHEADER bi = { 0 };
+	bi.biSize = sizeof(BITMAPINFOHEADER);
+	bi.biWidth = bm.bmWidth;
+	bi.biHeight = -bm.bmHeight;
+	bi.biPlanes = 1;
+	bi.biBitCount = bm.bmBitsPixel;
+	bi.biCompression = BI_RGB;
+
+	HANDLE hFile = CreateFileW(filename, GENERIC_WRITE, 0, NULL,
+		CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hFile == INVALID_HANDLE_VALUE)
+	{
+		debug_printf("_viv_save_clipboard_image_to_file: CreateFile failed, error=%d\n", GetLastError());
+		DeleteObject(hBitmap);
+		return 0;
+	}
+
+	DWORD written;
+	WriteFile(hFile, &bf, sizeof(BITMAPFILEHEADER), &written, NULL);
+	WriteFile(hFile, &bi, sizeof(BITMAPINFOHEADER), &written, NULL);
+
+	HDC hdc2 = GetDC(NULL);
+	HDC memDC = CreateCompatibleDC(hdc2);
+	HBITMAP oldBitmap = (HBITMAP)SelectObject(memDC, hBitmap);
+
+	int scanlineSize = ((bm.bmWidth * bm.bmBitsPixel + 31) / 32) * 4;
+	BYTE* bits = (BYTE*)malloc(scanlineSize * bm.bmHeight);
+	if (bits)
+	{
+		GetBitmapBits(hBitmap, scanlineSize * bm.bmHeight, bits);
+		WriteFile(hFile, bits, scanlineSize * bm.bmHeight, &written, NULL);
+		free(bits);
+	}
+
+	SelectObject(memDC, oldBitmap);
+	DeleteDC(memDC);
+	ReleaseDC(NULL, hdc2);
+
+	CloseHandle(hFile);
+	DeleteObject(hBitmap);
+
+	debug_printf("_viv_save_clipboard_image_to_file: Saved to %S\n", filename);
+	return 1;
 }
 
 static LRESULT CALLBACK _viv_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
@@ -4062,35 +4360,76 @@ debug_printf("NEXT AFTER LOAD %S\n",fd->cFileName);
 		
 			break;
 		}
-		
+
 		case WM_PASTE:
-		
-		debug_printf("paste\n");
-		
+		{
+			debug_printf("WM_PASTE received\n");
+
 			if (OpenClipboard(hwnd))
 			{
-				HGLOBAL hglobal;
-				
-				// try a hdrop
-				hglobal = GetClipboardData(CF_HDROP);
-				
-				if (hglobal)
+				HANDLE hDIB = GetClipboardData(CF_DIB);
+				if (!hDIB)
 				{
-					HDROP hdrop;
-					
-					hdrop = (HDROP)GlobalLock(hglobal);
-					if (hdrop)
-					{
-						SendMessage(hwnd,WM_DROPFILES,(WPARAM)hdrop,0);
+					hDIB = GetClipboardData(CF_DIBV5);
+				}
+				if (!hDIB)
+				{
+					hDIB = GetClipboardData(CF_BITMAP);
+				}
 
-						GlobalUnlock(hglobal);
+				if (hDIB)
+				{
+					debug_printf("WM_PASTE: Got DIB/BITMAP from clipboard\n");
+
+					wchar_t temp_path[MAX_PATH];
+					wchar_t temp_file[MAX_PATH];
+
+					GetTempPath(MAX_PATH, temp_path);
+					GetTempFileName(temp_path, L"VIV", 0, temp_file);
+
+					wchar_t* ext = wcsrchr(temp_file, L'.');
+					if (ext) wcscpy(ext, L".bmp");
+
+					if (_viv_save_clipboard_image_to_file(temp_file))
+					{
+						debug_printf("WM_PASTE: Saved to temp file: %S\n", temp_file);
+
+						_viv_open_from_filename(temp_file);
+
+						DeleteFile(temp_file);
+					}
+					else
+					{
+						debug_printf("WM_PASTE: Failed to save clipboard image to file\n");
+					}
+				}
+				else
+				{
+					HGLOBAL hglobal = GetClipboardData(CF_HDROP);
+					if (hglobal)
+					{
+						HDROP hdrop = (HDROP)GlobalLock(hglobal);
+						if (hdrop)
+						{
+							debug_printf("WM_PASTE: Got HDROP from clipboard\n");
+							SendMessage(hwnd, WM_DROPFILES, (WPARAM)hdrop, 0);
+							GlobalUnlock(hglobal);
+						}
+					}
+					else
+					{
+						debug_printf("WM_PASTE: No supported clipboard format found\n");
 					}
 				}
 
 				CloseClipboard();
 			}
-
+			else
+			{
+				debug_printf("WM_PASTE: OpenClipboard failed, error=%d\n", GetLastError());
+			}
 			break;
+		}
 		
 		case WM_PAINT:
 		{

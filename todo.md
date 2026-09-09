@@ -32,8 +32,8 @@
 - [ ] Shift+Ctrl+Numpad arrows for faster/slower movement
 
 ## Keyboard & Mouse
-- [ ] Ctrl+C to copy display area to clipboard
-- [ ] Ctrl+V to paste image from clipboard
+- [X] Ctrl+C to copy display area to clipboard
+- [X] Ctrl+V to paste image from clipboard
 - [ ] Middle mouse: scroll to control slideshow speed
 - [ ] Keyboard shortcut to toggle randomize
 
