@@ -9,6 +9,7 @@
 **/Release/
 
 # VS generated
+*.aps
 *.suo
 *.user
 *.VC.db
