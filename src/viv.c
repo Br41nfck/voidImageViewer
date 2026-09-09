@@ -21,74 +21,6 @@
 //
 // VoidImageViewer
 
-// TODO:
-// add UI option for config_title_bar_format.
-// compile on mingw
-// review jump-to focus
-// option to show full path like MPC
-// Undo option, after delete, undo the delete and re-add the image to the playlist.
-// delete crashes on win9x, might indicate a deeper issue..
-// fix horrible screen buffer mangling by Windows when resizing the window or auto fitting the window.
-// msi installer
-// ARM/ARM64 installer
-// install for current user only option, install to %LocalAppData%\Programs
-// dark mode (nothing in viv has Microsoft dark theme support -I will have to render ALL controls myself)
-// Use Direct3D to render images when shrinking.
-// use sort order from Windows Explorer folder.
-// Copy the zoomed part of the image to another buffer and stretch that to avoid gdi driver issues when zooming in really close with large images.
-// - get image width/length via IPC
-// - get/set viv display area width/length via IPC
-// Support piping of image data for ImageMagic support
-// - set/get zoom level 
-// - change zoom in/out level in 1/10/100 percent steps
-// - auto zoom levels: always fit to width, always fit to height, zoom inside (fit to width or height so that still the whole image is shown), zoom outside (fit to width or height so that the window is fully filled)
-// - option to keep the custom zoom level while image displayed changed
-// - by holding left mouse button on displayed image and moving the mouse, move viv window when using "zoom inside" mode, else move image inside viv window
-// - keyboard shortcut Ctrl+C to copy viv display area to clipboard and Ctrl+V to paste the image from clipboard and display it.
-// - I use ImageMagick's convert.exe and GraphicsMagick's gm.exe tools for color correction an image sharpening. I need to pipe out the image showing in viv to those apps and pipe in the output of those apps to viv and display the processed image without writing to disk, i.e. viv write to STOUT and read from STDIN.
-// - may be there could be an option in viv that the user just provide the executable names and the command line parameters that optionally would be executed whenever the file displayed changes. - some sort of multiple instances setting, eg: viv.exe -no-new-instance -other command line arguments... -could also support named instances
-// - set/get file name of displayed image. Considering when clipboard/STDIN is displayed, it would be nice to still be able to get the name of the file that was displayed before showing the clipboard/STDIN.
-// - auto update the image displayed when the image on disk (or the clipboard) has changed
-// - next/previous image with option to show files in subfolders. Considering when clipboard/STDIN is displayed, the base image would be the file that was displayed before showing the clipboard/STDIN.
-// - border less window with retractable title bar
-// - dark skin (use system theme)
-// - snap viv window to other windows and the monitor borders
-// - no minimum viv window size restriction
-// - open/edit image with another app
-// - color correction, white balance, sharpening
-// - == mehdi
-// create a playlist file format (aka an album of images)
-// Ken Burns Effect Slideshows with FFMPeg -stamimail -https://el-tramo.be/blog/ken-burns-ffmpeg/
-// open a file with the filename clipboard: to open the clipboard
-// open a file with the filename stdin: to open stdin
-// Check we are using ICC
-// show main window on monitor that the cursor is currently on, like MPC-HC.
-// remove GetFileAttributesEx or replace with GetFileAttributes..
-// Ctrl + V to paste image from the clipboard into voidImageViewer??
-// a touch window from inside option
-// add support for APNG
-// A Play All Instances option that plays/pause all instances
-// keyboard shortcut to toggle Everything randomize.
-// middle mouse action, scroll and control slideshow speed
-// make VIV more aware of other VIV windows for improved tile support.. cascade etc..
-// OpenGL renderer
-// Direct3D renderer
-// graphics::GetHalftonePalette for 256 color mode.
-// high dpi icons
-// control toolbar customization
-// install bmp/jpg only if the default value for HKEY_CLASSES_ROOT\.bmp is bmpfile or voidImageViewer.bmpfile -don't replace non default ones. default hard to determine for each version of Windows -avoiding for now.
-// string table for localization.
-// right click -> open with ...open with, or rather get a proper context menu. CDefFolderMenu_Create2
-// keep window aspect size option
-// generate a shuffle list of indexes for the Everything randomize option.
-// image playlists. m3u? efu? -command line option to load a list of filenames from a txt/efu file lists.
-// shift + Ctrl + Numpad arrow keys for faster/slower movement
-// when panning the image, clamp to the image edge, instead of the image center.
-// paste dib from clipboard CF_DIB
-// therube: Just to note...  Something like: voidImageViewer.exe "\my documents" or voidImageViewer.exe "\my documents\"  , will load "images" found in the \my documents\ directory.  Though somethig like: voidImageViewer.exe "\my documents\*" or voidImageViewer.exe "\my documents\*.*"  will load (I suppose it is) ALL images on your computer. voidImageViewer.exe "\my documents\*.jpg" works as expected. 
-// maintain correct image aspect ratio when window is clipped on auto size.
-// if we have a small image 64x64 and zoom right in, the image still fits inside our window -if we then go fullscreen the image is massive, we should check if Fill Window is triggered and disable the zoom in fullscreen mode.
-//
 // DONE:
 // *deleting the last image in a playlist does not clear the image.
 // *added xbutton action
@@ -426,6 +358,7 @@ typedef struct _viv_webp_s
 	
 }_viv_webp_t;
 
+static void _viv_update_title_preview(HWND hwnd);
 static void _viv_update_title(void);
 static void _viv_on_size(void);
 static LRESULT CALLBACK _viv_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
@@ -8209,95 +8142,122 @@ static INT_PTR CALLBACK _viv_options_controls_proc(HWND hwnd,UINT msg,WPARAM wPa
 	
 	return FALSE;
 }
-static INT_PTR CALLBACK _viv_options_view_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
+
+
+static INT_PTR CALLBACK _viv_options_view_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	switch(msg)
+	switch (msg)
 	{
-		case WM_INITDIALOG:
-			
-			os_ComboBox_AddString(hwnd,IDC_COMBO1,(const utf8_t *)"COLORONCOLOR (Performance)");
-			os_ComboBox_AddString(hwnd,IDC_COMBO1,(const utf8_t *)"HALFTONE (Quality)");
-			
-			if (config_shrink_blit_mode == CONFIG_SHRINK_BLIT_MODE_HALFTONE)
-			{
-				ComboBox_SetCurSel(GetDlgItem(hwnd,IDC_COMBO1),1);
-			}
-			else
-			{
-				ComboBox_SetCurSel(GetDlgItem(hwnd,IDC_COMBO1),0);
-			}
+	case WM_INITDIALOG:
+	{
+		// Shrink blit mode
+		os_ComboBox_AddString(hwnd, IDC_COMBO1, (const utf8_t*)"COLORONCOLOR (Performance)");
+		os_ComboBox_AddString(hwnd, IDC_COMBO1, (const utf8_t*)"HALFTONE (Quality)");
 
-			os_ComboBox_AddString(hwnd,IDC_COMBO2,(const utf8_t *)"COLORONCOLOR (Performance)");
-			os_ComboBox_AddString(hwnd,IDC_COMBO2,(const utf8_t *)"HALFTONE (Quality)");
-			
-			if (config_mag_filter == CONFIG_MAG_FILTER_HALFTONE)
-			{
-				ComboBox_SetCurSel(GetDlgItem(hwnd,IDC_COMBO2),1);
-			}
-			else
-			{
-				ComboBox_SetCurSel(GetDlgItem(hwnd,IDC_COMBO2),0);
-			}
-					
-			CheckDlgButton(hwnd,IDC_AUTO_ZOOM,config_auto_zoom ? BST_CHECKED : BST_UNCHECKED);
-			
-			os_ComboBox_AddString(hwnd,IDC_COMBO4,(const utf8_t *)"50%");
-			os_ComboBox_AddString(hwnd,IDC_COMBO4,(const utf8_t *)"100%");
-			os_ComboBox_AddString(hwnd,IDC_COMBO4,(const utf8_t *)"200%");
-			os_ComboBox_AddString(hwnd,IDC_COMBO4,(const utf8_t *)"Auto Fit");
-			ComboBox_SetCurSel(GetDlgItem(hwnd,IDC_COMBO4),config_auto_zoom_type);
-			EnableWindow(GetDlgItem(hwnd,IDC_COMBO4),IsDlgButtonChecked(hwnd,IDC_AUTO_ZOOM) == BST_CHECKED);
+		if (config_shrink_blit_mode == CONFIG_SHRINK_BLIT_MODE_HALFTONE)
+		{
+			ComboBox_SetCurSel(GetDlgItem(hwnd, IDC_COMBO1), 1);
+		}
+		else
+		{
+			ComboBox_SetCurSel(GetDlgItem(hwnd, IDC_COMBO1), 0);
+		}
 
-			CheckDlgButton(hwnd,IDC_LOOP_ANIMATIONS_ONCE,config_loop_animations_once ? BST_CHECKED : BST_UNCHECKED);
-			CheckDlgButton(hwnd,IDC_PRELOAD_NEXT_IMAGE,config_preload_next ? BST_CHECKED : BST_UNCHECKED);
-			CheckDlgButton(hwnd,IDC_CACHE_LAST_IMAGE,config_cache_last ? BST_CHECKED : BST_UNCHECKED);
-			
-			SetWindowLongPtr(GetDlgItem(hwnd,IDC_WINDOWEDBACKGROUNDCOLOR),GWLP_USERDATA,RGB(config_windowed_background_color_r,config_windowed_background_color_g,config_windowed_background_color_b));
-			_viv_update_color_button_bitmap(GetDlgItem(hwnd,IDC_WINDOWEDBACKGROUNDCOLOR));
+		// Magnify blit mode
+		os_ComboBox_AddString(hwnd, IDC_COMBO2, (const utf8_t*)"COLORONCOLOR (Performance)");
+		os_ComboBox_AddString(hwnd, IDC_COMBO2, (const utf8_t*)"HALFTONE (Quality)");
 
-			SetWindowLongPtr(GetDlgItem(hwnd,IDC_FULLSCREENBACKGROUNDCOLOR),GWLP_USERDATA,RGB(config_fullscreen_background_color_r,config_fullscreen_background_color_g,config_fullscreen_background_color_b));
-			_viv_update_color_button_bitmap(GetDlgItem(hwnd,IDC_FULLSCREENBACKGROUNDCOLOR));
-					
-			return FALSE;
-			
-		case WM_DESTROY:	
-			_viv_delete_color_button_bitmap(GetDlgItem(hwnd,IDC_WINDOWEDBACKGROUNDCOLOR));
-			_viv_delete_color_button_bitmap(GetDlgItem(hwnd,IDC_FULLSCREENBACKGROUNDCOLOR));
-			break;
-		
-		case WM_COMMAND:
+		if (config_mag_filter == CONFIG_MAG_FILTER_HALFTONE)
+		{
+			ComboBox_SetCurSel(GetDlgItem(hwnd, IDC_COMBO2), 1);
+		}
+		else
+		{
+			ComboBox_SetCurSel(GetDlgItem(hwnd, IDC_COMBO2), 0);
+		}
 
-			switch(LOWORD(wParam))
+		// Auto zoom
+		CheckDlgButton(hwnd, IDC_AUTO_ZOOM, config_auto_zoom ? BST_CHECKED : BST_UNCHECKED);
+
+		// Auto zoom type
+		os_ComboBox_AddString(hwnd, IDC_COMBO4, (const utf8_t*)"50%");
+		os_ComboBox_AddString(hwnd, IDC_COMBO4, (const utf8_t*)"100%");
+		os_ComboBox_AddString(hwnd, IDC_COMBO4, (const utf8_t*)"200%");
+		os_ComboBox_AddString(hwnd, IDC_COMBO4, (const utf8_t*)"Auto Fit");
+		ComboBox_SetCurSel(GetDlgItem(hwnd, IDC_COMBO4), config_auto_zoom_type);
+		EnableWindow(GetDlgItem(hwnd, IDC_COMBO4), IsDlgButtonChecked(hwnd, IDC_AUTO_ZOOM) == BST_CHECKED);
+
+		{
+			HWND combo = GetDlgItem(hwnd, IDC_TITLE_BAR_FORMAT_COMBO);
+			if (combo)
 			{
-				case IDC_AUTO_ZOOM:
-				
-					EnableWindow(GetDlgItem(hwnd,IDC_COMBO4),IsDlgButtonChecked(hwnd,IDC_AUTO_ZOOM) == BST_CHECKED);
-				
-					break; 
-				
-				case IDC_WINDOWEDBACKGROUNDCOLOR:
-				case IDC_FULLSCREENBACKGROUNDCOLOR:
-					
-					{
-						COLORREF color;
-						
-						color = GetWindowLongPtr(GetDlgItem(hwnd,LOWORD(wParam)),GWLP_USERDATA);
-						
-						if (os_choose_color(hwnd,&color))
-						{
-							SetWindowLongPtr(GetDlgItem(hwnd,LOWORD(wParam)),GWLP_USERDATA,color);
-							_viv_update_color_button_bitmap(GetDlgItem(hwnd,LOWORD(wParam)));
-						}
-					}
-					
-					break;
+				ComboBox_AddString(combo, L"Full Path");
+				ComboBox_AddString(combo, L"Filename Only");
+				ComboBox_AddString(combo, L"None");
+				ComboBox_SetCurSel(combo, config_title_bar_format);
 			}
-			
-			break;
+		}
+
+		CheckDlgButton(hwnd, IDC_LOOP_ANIMATIONS_ONCE, config_loop_animations_once ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwnd, IDC_PRELOAD_NEXT_IMAGE, config_preload_next ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwnd, IDC_CACHE_LAST_IMAGE, config_cache_last ? BST_CHECKED : BST_UNCHECKED);
+
+		SetWindowLongPtr(GetDlgItem(hwnd, IDC_WINDOWEDBACKGROUNDCOLOR), GWLP_USERDATA,
+			RGB(config_windowed_background_color_r, config_windowed_background_color_g, config_windowed_background_color_b));
+		_viv_update_color_button_bitmap(GetDlgItem(hwnd, IDC_WINDOWEDBACKGROUNDCOLOR));
+
+		SetWindowLongPtr(GetDlgItem(hwnd, IDC_FULLSCREENBACKGROUNDCOLOR), GWLP_USERDATA,
+			RGB(config_fullscreen_background_color_r, config_fullscreen_background_color_g, config_fullscreen_background_color_b));
+		_viv_update_color_button_bitmap(GetDlgItem(hwnd, IDC_FULLSCREENBACKGROUNDCOLOR));
+
+		return FALSE;
 	}
-	
+
+	case WM_DESTROY:
+		_viv_delete_color_button_bitmap(GetDlgItem(hwnd, IDC_WINDOWEDBACKGROUNDCOLOR));
+		_viv_delete_color_button_bitmap(GetDlgItem(hwnd, IDC_FULLSCREENBACKGROUNDCOLOR));
+		break;
+
+	case WM_COMMAND:
+	{
+		switch (LOWORD(wParam))
+		{
+		case IDC_AUTO_ZOOM:
+			EnableWindow(GetDlgItem(hwnd, IDC_COMBO4),
+				IsDlgButtonChecked(hwnd, IDC_AUTO_ZOOM) == BST_CHECKED);
+			break;
+
+		case IDC_TITLE_BAR_FORMAT_COMBO:
+			if (HIWORD(wParam) == CBN_SELCHANGE)
+			{
+				int sel = ComboBox_GetCurSel((HWND)lParam);
+				if (sel >= 0 && sel <= 2)
+				{
+					config_title_bar_format = sel;
+					_viv_update_title();
+				}
+			}
+			break;
+
+		case IDC_WINDOWEDBACKGROUNDCOLOR:
+		case IDC_FULLSCREENBACKGROUNDCOLOR:
+		{
+			COLORREF color = GetWindowLongPtr(GetDlgItem(hwnd, LOWORD(wParam)), GWLP_USERDATA);
+			if (os_choose_color(hwnd, &color))
+			{
+				SetWindowLongPtr(GetDlgItem(hwnd, LOWORD(wParam)), GWLP_USERDATA, color);
+				_viv_update_color_button_bitmap(GetDlgItem(hwnd, LOWORD(wParam)));
+			}
+			break;
+		}
+		}
+		break;
+	}
+	}
+
 	return FALSE;
 }
+
 
 static void _viv_options_treeview_changed(HWND hwnd)
 {
@@ -8553,6 +8513,19 @@ static INT_PTR CALLBACK _viv_options_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARA
 						config_right_click_action = ComboBox_GetCurSel(GetDlgItem(controls_page,IDC_RIGHTCLICKACTION));
 						config_mouse_wheel_action = ComboBox_GetCurSel(GetDlgItem(controls_page,IDC_MOUSEWHEELACTION));
 						
+
+						HWND combo = GetDlgItem(view_page, IDC_TITLE_BAR_FORMAT_COMBO);
+						if (combo)
+						{
+							int sel = ComboBox_GetCurSel(combo);
+							if (sel >= 0 && sel <= 2)
+							{
+								config_title_bar_format = sel;
+							}
+						}
+
+						_viv_update_title();
+
 						if (ComboBox_GetCurSel(GetDlgItem(view_page,IDC_COMBO1)) == 1)
 						{
 							config_shrink_blit_mode = CONFIG_SHRINK_BLIT_MODE_HALFTONE;
