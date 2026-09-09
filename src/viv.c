@@ -186,7 +186,7 @@
 #define VIV_YEAR_STRING2(x)	#x
 #define VIV_YEAR_STRING(x)	VIV_YEAR_STRING2(x)	
 
-// _VIV_STRETCH_BLT_STITCH_SIZE * 3.1 (pan+zoom) * 16 (zoom) MUST BE < 32768
+// _VIV_STRETCH_BLT_STITCH_SIZE * 3.1 (pan + zoom) * 16 (zoom) MUST BE < 32768
 #define _VIV_STRETCH_BLT_STITCH_SIZE		512
 
 #include "viv.h"
@@ -359,348 +359,347 @@ typedef struct _viv_webp_s
 	
 }_viv_webp_t;
 
-static void _viv_update_title_preview(HWND hwnd);
-static void _viv_update_title(void);
-static void _viv_on_size(void);
-static LRESULT CALLBACK _viv_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
-static LRESULT CALLBACK _viv_fullscreen_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
-static void _viv_command_with_is_key_repeat(int command,int is_key_repeat);
-static void _viv_command(int command);
-static int _viv_process_install_command_line_options(wchar_t *cl);
-static void _viv_process_command_line(wchar_t *cl);
-static int _viv_init(int nCmdShow);
-static void _viv_kill(void);
-static void _viv_exit(void);
-static int _viv_next(int prev,int reset_slideshow_timer,int is_preload,int wait_for_current_load);
-static void _viv_home(int end,int is_preload);
-static int _viv_is_valid_filename(WIN32_FIND_DATA *fd);
-static int _viv_is_msg(MSG *msg);
-static void _viv_view_set(int view_x,int view_y,int invalidate);
-static void _viv_slideshow(void);
-static void _viv_toggle_fullscreen(void);
-static void _viv_get_render_size(int *prw,int *prh);
-static void _viv_set_custom_rate(void);
-static void _viv_set_rate(int rate);
-static void _viv_rename(void);
-static void _viv_delete(int permanently);
-static void _viv_copy(int cut);
-static void _viv_copy_filename(void);
-static void _viv_set_clipboard_image(void);
-static void _viv_copy_image(void);
-static int _viv_is_key_state(int control,int shift,int alt);
-static CLIPFORMAT _viv_get_CF_PREFERREDDROPEFFECT(void);
-static void _viv_pause(void);
-static int _viv_fd_compare(const WIN32_FIND_DATA *a,const WIN32_FIND_DATA *b);
-static void _viv_open(WIN32_FIND_DATA *fd,int is_preload);
-static BOOL _viv_open_from_filename(const wchar_t *filename);
-static void _viv_increase_rate(int dec);
-static void _viv_file_preview(void);
-static void _viv_file_print(void);
-static void _viv_file_set_desktop_wallpaper(void);
-static void _viv_edit_rotate(int counterclockwise);
-static void _viv_file_edit(void);
-static void _viv_open_file_location(void);
-static void _viv_properties(void);
-static void _viv_doing_cancel(void);
-static const char *_viv_get_copydata_string(const char *p,const char *e,wchar_t *buf,int bufsize);
-static void _viv_blank(void);
-static void _viv_options(void);
-static INT_PTR CALLBACK _viv_options_proc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam);
-static INT_PTR CALLBACK _viv_options_general_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
-static INT_PTR CALLBACK _viv_options_view_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
-static INT_PTR CALLBACK _viv_options_controls_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
-static void _viv_install_association_by_extension(const char *association,const char *description,const char *icon_location);
-static void _viv_uninstall_association_by_extension(const char *association);
-static int _viv_is_association(const char *association);
-static int _viv_get_registry_string(HKEY hkey,const utf8_t *value,wchar_t *wbuf,int size_in_wchars);
-static int _viv_set_registry_string(HKEY hkey,const utf8_t *value,const wchar_t *wbuf);
-static void _viv_check_menus(HMENU hmenu);
-static void _viv_increase_animation_rate(int dec);
-static void _viv_reset_animation_rate(void);
-static void _viv_timer_start(void);
-static void _viv_mousemove(void);
-static void _viv_update_src_pixel(int force,int update_statusbar);
-static void _viv_animation_pause(void);
-static void _viv_frame_step(void);
-static void _viv_frame_prev(void);
-static void _viv_view_1to1(void);
-static void _viv_playlist_clearall(void);
-static void _viv_playlist_add_current_if_empty(void);
-static _viv_playlist_t *_viv_playlist_add(const WIN32_FIND_DATA *fd);
-static void _viv_playlist_add_path(const wchar_t *full_path_and_filename);
-static void _viv_playlist_add_filename(const wchar_t *filename);
-static void _viv_playlist_delete(const WIN32_FIND_DATA *fd);
-static void _viv_playlist_rename(const wchar_t *old_filename,const wchar_t *new_filename);
-static void _viv_timer_stop(void);
-static int _viv_is_window_maximized(HWND hwnd);
-static INT_PTR CALLBACK _viv_custom_rate_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
-static INT_PTR CALLBACK _viv_about_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
-static void _viv_update_frame(void);
-static void _viv_update_ontop(void);
-static void _viv_update_prevent_sleep(void);
-static void _viv_dst_pos_set(int x,int y);
-static void _viv_dst_zoom_set(int x,int y);
-static void _viv_frame_skip(int size);
-static DWORD WINAPI _viv_load_image_thread_proc(void *param);
-static _viv_reply_t *_viv_reply_add(DWORD type,DWORD size,void *data);
-static void _viv_reply_clear_all(void);
-static void _viv_reply_free(_viv_reply_t *e);
-static void _viv_controls_show(int show);
-static void _viv_status_show(int show);
-static void _viv_status_update(void);
-static void _viv_status_set(int part,const wchar_t *text);
-static int _viv_get_status_high(void);
-static int _viv_get_controls_high(void);
-static LRESULT CALLBACK _viv_rebar_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
-static LRESULT CALLBACK _viv_status_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
-static int _viv_toolbar_get_wide(void);
-static void _viv_toolbar_update_buttons(void);
-static void _viv_status_set_temp_text(wchar_t *text);
-static void _viv_status_update_temp_pos_zoom(void);
-static void _viv_status_update_temp_animation_rate(void);
-static void _viv_zoom_in(int out,int have_xy,int x,int y);
-static void _viv_status_update_slideshow_rate(void);
-static void _viv_options_treeview_changed(HWND hwnd);
-static void _viv_command_line_options(void);
-static void _viv_install_association(DWORD flags);
-static void _viv_uninstall_association(DWORD flags);
-static void _viv_view_scroll(int mx,int my);
-static void _viv_options_update_sheild(HWND hwnd);
-static void _viv_update_color_button_bitmap(HWND hwnd);
-static void _viv_delete_color_button_bitmap(HWND hwnd);
-static int _viv_convert_menu_ini_name_ch(int ch);
-static utf8_t *_viv_cat_command_menu_ini_name_path(utf8_t *buf,int menu_index);
-static void _viv_get_menu_display_name(wchar_t *buf,const utf8_t *menu_name);
-static void _viv_get_command_name(wchar_t *wbuf,int command_index);
-static int _viv_command_index_from_command_id(int command_id);
-static void _viv_cat_command_menu_path(wchar_t *wbuf,int menu_index);
-static int _viv_vk_to_text(wchar_t *wbuf,int vk);
-static void _viv_cat_key_mod(wchar_t *wbuf,int vk,const utf8_t *default_keytext);
-static void _viv_get_key_text(wchar_t *wbuf,DWORD keyflags);
-static HMENU _viv_create_menu(void);
-static void _viv_key_add(struct _viv_key_list_s *key_list,int command_index,DWORD keyflags);
-static void _viv_key_clear(struct _viv_key_list_s *key_list,int command_index);
-static void _viv_key_list_copy(struct _viv_key_list_s *dst,const struct _viv_key_list_s *src);
-static void _viv_key_clear_all(struct _viv_key_list_s *list);
-static void _viv_key_list_init(struct _viv_key_list_s *list);
-static void _viv_options_key_list_sel_change(HWND hwnd,int previous_key_index);
-static void _viv_options_remove_key(HWND hwnd);
-static void _viv_options_edit_key(HWND hwnd,int key_index);
-static INT_PTR CALLBACK _viv_edit_key_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
-static LRESULT CALLBACK _viv_edit_key_edit_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
-static int _viv_get_current_key_mod_flags(void);
-static void _viv_options_edit_key_changed(HWND hwnd);
-static void _viv_edit_key_set_key(HWND hwnd,DWORD key_flags);
-static void _viv_key_remove(struct _viv_key_list_s *keylist,int command_index,DWORD keyflags);
-static void _viv_edit_key_remove_currently_used_by(struct _viv_key_list_s *keylist,DWORD keyflags);
-static void _viv_close_existing_process(void);
-static void _viv_uninstall_delete_file(const wchar_t *path,const utf8_t *filename);
-static int _viv_is_start_menu_shortcuts(void);
-static void _viv_install_start_menu_shortcuts(void);
-static void _viv_uninstall_start_menu_shortcuts(void);
-static void _viv_append_admin_param(wchar_t *wbuf,const utf8_t *param);
-static void _viv_install_copy_file(const wchar_t *install_path,const wchar_t *temp_path,const utf8_t *filename,int critical);
-static INT_PTR CALLBACK _viv_rename_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
-static void _viv_shuffle_playlist(void);
-static void _viv_show_jumpto(void);
-static LRESULT CALLBACK _viv_jumpto_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
-static void _viv_jumpto_on_size(HWND hwnd);
-static void _viv_jumpto_on_search(HWND hwnd);
-static void _viv_jumpto_open_sel(HWND hwnd);
-static void _viv_nav_item_free_all(void);
-static void _viv_nav_item_add(WIN32_FIND_DATA *fd);
-static int _viv_nav_compare(const _viv_nav_item_t *a,const _viv_nav_item_t *b);
-static void _viv_add_current_path_to_playlist(void);
-static void _viv_search_everything(int add);
-static int _viv_send_everything_search(HWND parent,int add,int randomize,const wchar_t *search);
-static INT_PTR CALLBACK _viv_search_everything_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
-static int _viv_playlist_shuffle_index_from_fd(const WIN32_FIND_DATA *fd);
-static void _viv_do_initial_shuffle(void);
-static _viv_playlist_t *_viv_playlist_from_fd(const WIN32_FIND_DATA *fd);
-static int _viv_compare_id(const WIN32_FIND_DATA *a,const WIN32_FIND_DATA *b);
-static int _viv_fd_compare_name(const WIN32_FIND_DATA *a,const WIN32_FIND_DATA *b);
-static int _viv_fd_compare_path_and_name(const WIN32_FIND_DATA *a,const WIN32_FIND_DATA *b);
-static void _viv_update_1to1_scroll(int x,int y);
-static HBITMAP _viv_orientate_hbitmap(HBITMAP hbitmap,int counterclockwise);
-static void _viv_send_random_everything_search(void);
-static void _viv_do_mousewheel_action(int action,int delta,int x,int y);
-static void _viv_mipmap_free(_viv_mipmap_t *mipmap);
-//static void _viv_queue_clear(void);
-static void _viv_clear(void);
-static void _viv_process_pending_clear(void);
-static void _viv_clear_loading_preload(void);
-static void _viv_clear_preload(void);
-static void _viv_clear_preload_frames(void);
-static HBITMAP _viv_get_mipmap(HBITMAP hbitmap,int image_wide,int image_high,int render_wide,int render_high,int *pmip_wide,int *pmip_high,_viv_mipmap_t **out_mip);
-static void _viv_preload_next(void);
-static void _viv_start_first_frame(void);
-static void _viv_activate_preload(void);
-static int _viv_webp_info_proc(_viv_webp_t *viv_webp,DWORD frame_count,DWORD wide,DWORD high,int has_alpha);
-static int _viv_webp_frame_proc(_viv_webp_t *viv_webp,BYTE *pixels,int delay);
-static void _viv_clear_frames(_viv_frame_t *frames,int loaded_count);
-static void viv_copy_current_image_to_last_image(void);
-static void _viv_activate_last(void);
-static void _viv_clear_last(void);
-static void _viv_refresh(void);
-static void _viv_show_cursor(void);
-static void _viv_hide_cursor(void);
-static int _viv_should_show_cursor(void);
-static void _viv_update_show_cursor(void);
-static void _viv_start_hide_cursor_timer(void);
-static int _viv_main(int nCmdShow);
-static void _viv_get_exe_filename(wchar_t filename[STRING_SIZE]);
-static void _viv_do_left_click_action(int action);
-static void _viv_start_move_window(void);
-static int _viv_ceil(double x);
-static void _viv_center_listbox_item(HWND listbox_hwnd,int item_index);
-static void _viv_stretch_blt(HDC dst_hdc,int dst_x,int dst_y,int dst_wide,int dst_high,HDC src_hdc,int src_wide,int src_high,int clip_x,int clip_y,int clip_wide,int clip_high);
-static BOOL _viv_StretchBltStitch(HDC hdcDest,int xDest,int yDest,int wDest,int hDest,HDC hdcSrc,int xSrc,int ySrc,int wSrc,int hSrc,DWORD rop,int clip_x,int clip_y,int clip_wide,int clip_high);
-static BOOL _viv_get_src_pixel_pos(int client_x,int client_y,POINT *out_src_pt);
-static void _viv_get_src_pixel_rgb(int src_x,int src_y,COLORREF *out_colorref);
-static int _viv_clamp_zoom_pos(int zoom_pos);
-static void _viv_open_preload(void);
+#define _VIV_ANIMATION_RATE_MAX	(sizeof(_viv_animation_rates) / sizeof(float))
+#define _VIV_ANIMATION_RATE_ONE	10
+#define _VIV_DST_ZOOM_MAX	139
+#define _VIV_DST_ZOOM_ONE	82
+#define _VIV_OPTIONS_PAGE_COUNT	(sizeof(_viv_options_dialog_ids) / sizeof(int))
+#define _VIV_SLIDESHOW_RATE_PRESET_COUNT (sizeof(_viv_slideshow_rate_presets) / sizeof(WORD))
+//static BYTE _viv_is_alt = 0;
+//static HWND _viv_tooltip_hwnd = 0;
+//static float _viv_animation_rates[] = {0.085899f,0.107374f,0.134218f,0.167772f,0.209715f,0.262144f,0.327680f,0.409600f,0.512000f,0.640000f,0.800000f,1.000000f,1.250000f,1.562500f,1.953125f,2.441406f,3.051758f,3.814697f,4.768372f,5.960464f,7.450581f,9.313226f}; // natural curve.
 //static void _viv_get_tooltip(void);
+//static void _viv_queue_clear(void);
 //static void _viv_tooltip_hide(void);
 //static void _viv_tooltip_update(void);
 //static void _viv_tooltip_update_track_position(void);
-
-static HMODULE _viv_stobject_hmodule = 0;
-static _viv_playlist_t *_viv_playlist_start = 0;
-static _viv_playlist_t *_viv_playlist_last = 0;
-static int _viv_playlist_count = 0;
-static _viv_playlist_t **_viv_playlist_shuffle_indexes = 0;
-static int _viv_playlist_shuffle_allocated = 0;
-static LARGE_INTEGER _viv_playlist_id = {0};
-static HWND _viv_hwnd = 0;
-static HWND _viv_status_hwnd = 0;
-static HWND _viv_toolbar_hwnd = 0;
-static HWND _viv_rebar_hwnd = 0;
-//static HWND _viv_tooltip_hwnd = 0;
-static HIMAGELIST _viv_toolbar_image_list = 0;
-static HANDLE _viv_mutex = 0;
-//static float _viv_animation_rates[] = {0.085899f,0.107374f,0.134218f,0.167772f,0.209715f,0.262144f,0.327680f,0.409600f,0.512000f,0.640000f,0.800000f,1.000000f,1.250000f,1.562500f,1.953125f,2.441406f,3.051758f,3.814697f,4.768372f,5.960464f,7.450581f,9.313226f}; // natural curve.
-static float _viv_animation_rates[] = {0.125000f,0.142857f,0.166667f,0.200000f,0.250000f,0.333333f,0.500000f,0.571429f,0.666667f,0.800000f,1.000000f,1.250000f,1.500000f,1.750000f,2.000000f,3.000000f,4.000000f,5.000000f,6.000000f,7.000000f,8.000000f}; // fixed animation rates
-#define _VIV_ANIMATION_RATE_MAX	(sizeof(_viv_animation_rates) / sizeof(float))
-#define _VIV_ANIMATION_RATE_ONE	10
-static int _viv_animation_rate_pos = _VIV_ANIMATION_RATE_ONE;
-static BYTE _viv_animation_play = 1; // play or pause animations
-static BYTE _viv_1to1 = 0; // temporarily show the image with 100% scaling
-static BYTE _viv_have_old_zoom = 0; // restore this zoom level after leaving 1:1 mode.
-static int _viv_old_zoom_pos = 0; // restore this zoom level after leaving 1:1 mode.
+BYTE _viv_is_fullscreen = 0;
 WIN32_FIND_DATA *_viv_current_fd = 0; // the current image find data including the full path and filename.
 WIN32_FIND_DATA *_viv_preload_fd = 0;
-static int _viv_view_x = 0; // the current image offset in pixels
-static int _viv_view_y = 0; // the current image offset in pixels
-static double _viv_view_ix = 0.0; // the current image offset in percent, used when resizing the window
-static double _viv_view_iy = 0.0; // the current image offset in percent, used when resizing the window
-static int _viv_zoom_pos = 0; // the current zoom level
-static float _viv_zoom_presets[_VIV_ZOOM_MAX] = {0.004815f,0.019215f,0.043060f,0.076120f,0.118079f,0.168530f,0.226989f,0.292893f,0.365607f,0.444430f,0.528603f,0.617316f,0.709715f,0.804909f,0.901983f,1.000000f}; // (1 - cos(((float)(x+1) * 1.570796f) / _VIV_ZOOM_MAX)) // this is missing cos((1 * 1.570796f) / _VIV_ZOOM_MAX), which is too small
-static ULONG_PTR os_GdiplusToken; // gdiplus handle
-static int _viv_image_wide = 0; // current image width
-static int _viv_image_high = 0; // current image width
-static int _viv_frame_count = 0; // current image frame count, 1 for static image, > 1 for animation
-static int _viv_frame_loaded_count = 0; // number of loaded frames, can be less than _viv_frame_count
-static int _viv_frame_position = 0; // the current frame position
-static BYTE _viv_frame_looped = 0; // all frames have been displayed for this animation
-static BYTE _viv_is_slideshow_timeup = 0; // the slideshow timer has expired, but we are still showing an animation at least once.
-static _viv_frame_t *_viv_frames = 0; // the frames that make up an image, could be more than one for animations.
-static VIV_UINT64 _viv_timer_tick = 0; // the current tick for the current frame.
-static BYTE _viv_is_animation_timer = 0; // animation timer started?
-static VIV_UINT64 _viv_animation_timer_tick_start = 0; // the current start tick
+static BOOL _viv_StretchBltStitch(HDC hdcDest,int xDest,int yDest,int wDest,int hDest,HDC hdcSrc,int xSrc,int ySrc,int wSrc,int hSrc,DWORD rop,int clip_x,int clip_y,int clip_wide,int clip_high);
+static BOOL _viv_get_src_pixel_pos(int client_x,int client_y,POINT *out_src_pt);
+static BOOL _viv_open_from_filename(const wchar_t *filename);
+static BYTE _viv_1to1 = 0; // temporarily show the image with 100% scaling
+static BYTE _viv_animation_play = 1; // play or pause animations
 static BYTE _viv_doing = _VIV_DOING_NOTHING; // current mouse action, such as drag to scroll image
-static int _viv_doing_x;
-static int _viv_doing_y;
-static int _viv_mdoing_x;
-static int _viv_mdoing_y;
+static BYTE _viv_file_not_found = 0; // the current file was not found. -filename is shown in the window caption.
+static BYTE _viv_frame_looped = 0; // all frames have been displayed for this animation
 static BYTE _viv_fullscreen_is_maxed = 0;
-static BYTE _viv_is_fullscreen = 0;
-static RECT _viv_fullscreen_rect;
-static int _viv_fullscreen_zoom_offset = 0;
-static BYTE _viv_is_slideshow = 0;
-static BYTE _viv_is_hide_cursor_timer = 0;
-static CLIPFORMAT _viv_CF_PREFERREDDROPEFFECT = 0; // copy or move? clipboard operation
-static WORD _viv_slideshow_rate_presets[] = {250,500,1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,20000,30000,40000,50000,60000};
-#define _VIV_SLIDESHOW_RATE_PRESET_COUNT (sizeof(_viv_slideshow_rate_presets) / sizeof(WORD))
-static BYTE _viv_is_cursor_shown = 1;
-static int _viv_mousemove_x = -1;
-static int _viv_mousemove_y = -1;
+static BYTE _viv_have_old_zoom = 0; // restore this zoom level after leaving 1:1 mode.
 static BYTE _viv_in_popup_menu = 0;
-static GUID _viv_FrameDimensionTime = {0x6aedbd6d,0x3fb5,0x418a,{0x83,0xa6,0x7f,0x45,0x22,0x9d,0xc8,0x72}};
-static HMENU _viv_hmenu = 0;
-static int _viv_dst_pos_x = 500;
-static int _viv_dst_pos_y = 500;
-#define _VIV_DST_ZOOM_MAX	139
-static float *_viv_dst_zoom_values;
-#define _VIV_DST_ZOOM_ONE	82
-static int _viv_dst_zoom_x_pos = _VIV_DST_ZOOM_ONE;
-static int _viv_dst_zoom_y_pos = _VIV_DST_ZOOM_ONE;
-static CRITICAL_SECTION _viv_cs;
-static HANDLE _viv_load_image_thread = 0;
-static BYTE _viv_load_is_preload = 0;
-static wchar_t *_viv_load_image_filename = 0;
-static WIN32_FIND_DATA *_viv_load_image_next_fd = NULL;
+static BYTE _viv_is_animation_paint = 0;
+static BYTE _viv_is_animation_timer = 0; // animation timer started?
+static BYTE _viv_is_animation_timer_event = 0;
+static BYTE _viv_is_cursor_shown = 1;
+static BYTE _viv_is_hide_cursor_timer = 0;
+static BYTE _viv_is_mouseover = 0; // mouse is currently over our window.
+static BYTE _viv_is_prevent_sleep = 0;
+static BYTE _viv_is_slideshow = 0;
+static BYTE _viv_is_slideshow_timeup = 0; // the slideshow timer has expired, but we are still showing an animation at least once.
+static BYTE _viv_is_timer_queue_timer = 0;
+static BYTE _viv_is_tracking_mouse = 0; // currently tracking mouse movement over our window.
+static BYTE _viv_jump_ret = 0;
+static BYTE _viv_last_is_prev = 0; // preload next or previous?
+static BYTE _viv_load_failed = 0; // the current file failed to load. -filename is shown in the window caption.
+static BYTE _viv_load_image_allow_draw = 0; // allow the image to show if it loaded successfully after the load was terminated.
 static BYTE _viv_load_image_next_is_preload = 0;
-static volatile int _viv_load_image_terminate = 0;
-static _viv_reply_t *_viv_reply_start = 0;
-static _viv_reply_t *_viv_reply_last = 0;
-static wchar_t *_viv_status_temp_text = 0;
-static const utf8_t *_viv_options_page_names[] = {"General","View","Controls"};
-static int _viv_options_tab_ids[] = {IDC_TAB1,IDC_TAB2,IDC_TAB3};
-static int _viv_options_dialog_ids[] = {IDD_GENERAL,IDD_VIEW,IDD_CONTROLS};
-#define _VIV_OPTIONS_PAGE_COUNT	(sizeof(_viv_options_dialog_ids) / sizeof(int))
-static int _viv_options_page_ids[] = {VIV_ID_OPTIONS_GENERAL,VIV_ID_OPTIONS_VIEW,VIV_ID_OPTIONS_CONTROLS};
-static DLGPROC _viv_options_page_procs[] = {_viv_options_general_proc,_viv_options_view_proc,_viv_options_controls_proc};
+static BYTE _viv_load_is_preload = 0;
+static BYTE _viv_preload_is_prev = 0; // preload next or previous?
+static BYTE _viv_preload_state = 0; // 0 = loading, 1=complete, 2=failed
+static BYTE _viv_prevent_on_deactivate = 0; // prevent handling of deactivate in WM_ACTIVATE.
+static BYTE _viv_prevent_on_size = 0; // don't process WM_SIZE changes.
+static BYTE _viv_should_activate_preload_on_load = 0;
+static BYTE _viv_src_pixel_b = 0;
+static BYTE _viv_src_pixel_g = 0;
+static BYTE _viv_src_pixel_r = 0;
+static CLIPFORMAT _viv_CF_PREFERREDDROPEFFECT = 0; // copy or move? clipboard operation
+static CLIPFORMAT _viv_get_CF_PREFERREDDROPEFFECT(void);
+static CRITICAL_SECTION _viv_cs;
+static DWORD WINAPI _viv_load_image_thread_proc(void *param);
+static DWORD _viv_everything_request_flags = 0;
+static DWORD _viv_random_tot_results = 0xffffffff;
+static GUID _viv_FrameDimensionTime = {0x6aedbd6d,0x3fb5,0x418a,{0x83,0xa6,0x7f,0x45,0x22,0x9d,0xc8,0x72}};
+static HANDLE _viv_load_image_thread = 0;
+static HANDLE _viv_mutex = 0;
+static HANDLE _viv_timer_queue_timer_handle;
+static HBITMAP _viv_get_mipmap(HBITMAP hbitmap,int image_wide,int image_high,int render_wide,int render_high,int *pmip_wide,int *pmip_high,_viv_mipmap_t **out_mip);
+static HBITMAP _viv_orientate_hbitmap(HBITMAP hbitmap,int counterclockwise);
 static HFONT _viv_about_hfont = 0;
-static wchar_t *_viv_last_open_file = 0;
-static wchar_t *_viv_last_open_folder = 0;
+static HIMAGELIST _viv_toolbar_image_list = 0;
+static HMENU _viv_create_menu(void);
+static HMENU _viv_hmenu = 0;
+static HMODULE _viv_stobject_hmodule = 0;
+static HWND _viv_hwnd = 0;
+static HWND _viv_rebar_hwnd = 0;
+static HWND _viv_status_hwnd = 0;
+static HWND _viv_toolbar_hwnd = 0;
+static INT_PTR CALLBACK _viv_about_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
+static INT_PTR CALLBACK _viv_custom_rate_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
+static INT_PTR CALLBACK _viv_edit_key_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
+static INT_PTR CALLBACK _viv_options_controls_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK _viv_options_general_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK _viv_options_proc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK _viv_options_view_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static INT_PTR CALLBACK _viv_rename_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
+static INT_PTR CALLBACK _viv_search_everything_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
+static DLGPROC _viv_options_page_procs[] = { _viv_options_general_proc,_viv_options_view_proc,_viv_options_controls_proc };
+static LARGE_INTEGER _viv_playlist_id = {0};
+static LRESULT (CALLBACK *_viv_old_status_proc)(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam) = NULL; // old status bar proc
+static LRESULT CALLBACK _viv_edit_key_edit_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
+static LRESULT CALLBACK _viv_fullscreen_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
+static LRESULT CALLBACK _viv_jumpto_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
+static LRESULT CALLBACK _viv_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
+static LRESULT CALLBACK _viv_rebar_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
+static LRESULT CALLBACK _viv_status_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
+static RECT _viv_fullscreen_rect;
+static ULONG_PTR os_GdiplusToken; // gdiplus handle
+static VIV_UINT64 _viv_animation_timer_tick_start = 0; // the current start tick
+static VIV_UINT64 _viv_timer_tick = 0; // the current tick for the current frame.
+static WIN32_FIND_DATA *_viv_frame_fd = 0; // the frame fd, may differ to the current fd because we change the title before the frames are loaded.
+static WIN32_FIND_DATA *_viv_last_fd = 0; // the last find data including the full path and filename.
+static WIN32_FIND_DATA *_viv_load_fd = 0; // the load fd
+static WIN32_FIND_DATA *_viv_load_image_next_fd = NULL;
+static WORD _viv_slideshow_rate_presets[] = {250,500,1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,20000,30000,40000,50000,60000};
+static _viv_frame_t *_viv_frames = 0; // the frames that make up an image, could be more than one for animations.
+static _viv_frame_t *_viv_last_frames = 0; // the last frames that make up an image, could be more than one for animations.
+static _viv_frame_t *_viv_pending_clear_frames = NULL;
+static _viv_frame_t *_viv_preload_frames = 0; // the frames that make up an image, could be more than one for animations.
 static _viv_nav_item_t **_viv_nav_items = 0;
 static _viv_nav_item_t *__viv_nav_item_start = 0;
 static _viv_nav_item_t *_viv_nav_item_last = 0;
+static _viv_playlist_t **_viv_playlist_shuffle_indexes = 0;
+static _viv_playlist_t *_viv_playlist_add(const WIN32_FIND_DATA *fd);
+static _viv_playlist_t *_viv_playlist_from_fd(const WIN32_FIND_DATA *fd);
+static _viv_playlist_t *_viv_playlist_last = 0;
+static _viv_playlist_t *_viv_playlist_start = 0;
+static _viv_reply_t *_viv_reply_add(DWORD type,DWORD size,void *data);
+static _viv_reply_t *_viv_reply_last = 0;
+static _viv_reply_t *_viv_reply_start = 0;
+static const char *_viv_get_copydata_string(const char *p,const char *e,wchar_t *buf,int bufsize);
+static const utf8_t *_viv_options_page_names[] = {"General","View","Controls"};
+static double _viv_view_ix = 0.0; // the current image offset in percent, used when resizing the window
+static double _viv_view_iy = 0.0; // the current image offset in percent, used when resizing the window
+static float *_viv_dst_zoom_values;
+static float _viv_animation_rates[] = {0.125000f,0.142857f,0.166667f,0.200000f,0.250000f,0.333333f,0.500000f,0.571429f,0.666667f,0.800000f,1.000000f,1.250000f,1.500000f,1.750000f,2.000000f,3.000000f,4.000000f,5.000000f,6.000000f,7.000000f,8.000000f}; // fixed animation rates
+static float _viv_zoom_presets[_VIV_ZOOM_MAX] = {0.004815f,0.019215f,0.043060f,0.076120f,0.118079f,0.168530f,0.226989f,0.292893f,0.365607f,0.444430f,0.528603f,0.617316f,0.709715f,0.804909f,0.901983f,1.000000f}; // (1 - cos(((float)(x+1) * 1.570796f) / _VIV_ZOOM_MAX)) // this is missing cos((1 * 1.570796f) / _VIV_ZOOM_MAX), which is too small
+static int _viv_animation_rate_pos = _VIV_ANIMATION_RATE_ONE;
+static int _viv_ceil(double x);
+static int _viv_clamp_zoom_pos(int zoom_pos);
+static int _viv_command_index_from_command_id(int command_id);
+static int _viv_compare_id(const WIN32_FIND_DATA *a,const WIN32_FIND_DATA *b);
+static int _viv_convert_menu_ini_name_ch(int ch);
+static int _viv_doing_x;
+static int _viv_doing_y;
+static int _viv_dst_pos_x = 500;
+static int _viv_dst_pos_y = 500;
+static int _viv_dst_zoom_x_pos = _VIV_DST_ZOOM_ONE;
+static int _viv_dst_zoom_y_pos = _VIV_DST_ZOOM_ONE;
+static int _viv_fd_compare(const WIN32_FIND_DATA *a,const WIN32_FIND_DATA *b);
+static int _viv_fd_compare_name(const WIN32_FIND_DATA *a,const WIN32_FIND_DATA *b);
+static int _viv_fd_compare_path_and_name(const WIN32_FIND_DATA *a,const WIN32_FIND_DATA *b);
+static int _viv_frame_count = 0; // current image frame count, 1 for static image, > 1 for animation
+static int _viv_frame_loaded_count = 0; // number of loaded frames, can be less than _viv_frame_count
+static int _viv_frame_position = 0; // the current frame position
+static int _viv_fullscreen_zoom_offset = 0;
+static int _viv_get_controls_high(void);
+static int _viv_get_current_key_mod_flags(void);
+static int _viv_get_registry_string(HKEY hkey,const utf8_t *value,wchar_t *wbuf,int size_in_wchars);
+static int _viv_get_status_high(void);
+static int _viv_image_high = 0; // current image width
+static int _viv_image_wide = 0; // current image width
+static int _viv_init(int nCmdShow);
+static int _viv_is_association(const char *association);
+static int _viv_is_key_state(int control,int shift,int alt);
+static int _viv_is_msg(MSG *msg);
+static int _viv_is_start_menu_shortcuts(void);
+static int _viv_is_valid_filename(WIN32_FIND_DATA *fd);
+static int _viv_is_window_maximized(HWND hwnd);
+static int _viv_last_frame_count = 0; // last image frame count, 1 for static image, > 1 for animation (all frames are loaded)
+static int _viv_last_image_high = 0; // last image height
+static int _viv_last_image_wide = 0; // last image width
+static int _viv_load_frame_count = 0; // the number of frames loaded, while loading.
+static int _viv_load_render_high = 0;
+static int _viv_load_render_wide = 0;
+static int _viv_main(int nCmdShow);
+static int _viv_mdoing_x;
+static int _viv_mdoing_y;
+static int _viv_mousemove_x = -1;
+static int _viv_mousemove_y = -1;
+static int _viv_nav_compare(const _viv_nav_item_t *a,const _viv_nav_item_t *b);
 static int _viv_nav_item_count = 0;
-static wchar_t *_viv_random = 0; // temp shuffle.
-static DWORD _viv_random_tot_results = 0xffffffff;
-static DWORD _viv_everything_request_flags = 0;
-static BYTE _viv_is_timer_queue_timer = 0;
-static HANDLE _viv_timer_queue_timer_handle;
-static BYTE _viv_is_animation_timer_event = 0;
-static BYTE _viv_is_animation_paint = 0;
-static BYTE _viv_preload_state = 0; // 0 = loading, 1=complete, 2=failed
-static int _viv_preload_image_wide = 0; // current image width
-static int _viv_preload_image_high = 0; // current image height
+static int _viv_next(int prev,int reset_slideshow_timer,int is_preload,int wait_for_current_load);
+static int _viv_old_zoom_pos = 0; // restore this zoom level after leaving 1:1 mode.
+static int _viv_options_dialog_ids[] = {IDD_GENERAL,IDD_VIEW,IDD_CONTROLS};
+static int _viv_options_page_ids[] = {VIV_ID_OPTIONS_GENERAL,VIV_ID_OPTIONS_VIEW,VIV_ID_OPTIONS_CONTROLS};
+static int _viv_options_tab_ids[] = {IDC_TAB1,IDC_TAB2,IDC_TAB3};
+static int _viv_pending_clear_frame_loaded_count = 0;
+static int _viv_playlist_count = 0;
+static int _viv_playlist_shuffle_allocated = 0;
+static int _viv_playlist_shuffle_index_from_fd(const WIN32_FIND_DATA *fd);
 static int _viv_preload_frame_count = 0; // current image frame count, 1 for static image, > 1 for animation
 static int _viv_preload_frame_loaded_count = 0; // number of loaded frames, can be less than _viv_frame_count
-static _viv_frame_t *_viv_preload_frames = 0; // the frames that make up an image, could be more than one for animations.
-static BYTE _viv_last_is_prev = 0; // preload next or previous?
-static BYTE _viv_preload_is_prev = 0; // preload next or previous?
-static BYTE _viv_should_activate_preload_on_load = 0;
-static int _viv_load_render_wide = 0;
-static int _viv_load_render_high = 0;
-static _viv_frame_t *_viv_pending_clear_frames = NULL;
-static int _viv_pending_clear_frame_loaded_count = 0;
-static WIN32_FIND_DATA *_viv_last_fd = 0; // the last find data including the full path and filename.
-static WIN32_FIND_DATA *_viv_frame_fd = 0; // the frame fd, may differ to the current fd because we change the title before the frames are loaded.
-static WIN32_FIND_DATA *_viv_load_fd = 0; // the load fd
-static int _viv_last_image_wide = 0; // last image width
-static int _viv_last_image_high = 0; // last image height
-static int _viv_last_frame_count = 0; // last image frame count, 1 for static image, > 1 for animation (all frames are loaded)
-static _viv_frame_t *_viv_last_frames = 0; // the last frames that make up an image, could be more than one for animations.
-static BYTE _viv_load_image_allow_draw = 0; // allow the image to show if it loaded successfully after the load was terminated.
-static LRESULT (CALLBACK *_viv_old_status_proc)(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam) = NULL; // old status bar proc
-static BYTE _viv_prevent_on_size = 0; // don't process WM_SIZE changes.
-static BYTE _viv_file_not_found = 0; // the current file was not found. -filename is shown in the window caption.
-static BYTE _viv_load_failed = 0; // the current file failed to load. -filename is shown in the window caption.
-static BYTE _viv_is_tracking_mouse = 0; // currently tracking mouse movement over our window.
-static BYTE _viv_is_mouseover = 0; // mouse is currently over our window.
-static BYTE _viv_prevent_on_deactivate = 0; // prevent handling of deactivate in WM_ACTIVATE.
-static BYTE _viv_jump_ret = 0;
-static int _viv_load_frame_count = 0; // the number of frames loaded, while loading.
+static int _viv_preload_image_high = 0; // current image height
+static int _viv_preload_image_wide = 0; // current image width
+static int _viv_process_install_command_line_options(wchar_t *cl);
+static int _viv_send_everything_search(HWND parent,int add,int randomize,const wchar_t *search);
+static int _viv_set_registry_string(HKEY hkey,const utf8_t *value,const wchar_t *wbuf);
+static int _viv_should_show_cursor(void);
 static int _viv_src_pixel_x = -1;
 static int _viv_src_pixel_y = -1;
-static BYTE _viv_src_pixel_r = 0;
-static BYTE _viv_src_pixel_g = 0;
-static BYTE _viv_src_pixel_b = 0;
-static BYTE _viv_is_prevent_sleep = 0;
-//static BYTE _viv_is_alt = 0;
+static int _viv_toolbar_get_wide(void);
+static int _viv_view_x = 0; // the current image offset in pixels
+static int _viv_view_y = 0; // the current image offset in pixels
+static int _viv_vk_to_text(wchar_t *wbuf,int vk);
+static int _viv_webp_frame_proc(_viv_webp_t *viv_webp,BYTE *pixels,int delay);
+static int _viv_webp_info_proc(_viv_webp_t *viv_webp,DWORD frame_count,DWORD wide,DWORD high,int has_alpha);
+static int _viv_zoom_pos = 0; // the current zoom level
+static utf8_t *_viv_cat_command_menu_ini_name_path(utf8_t *buf,int menu_index);
+static void _viv_activate_last(void);
+static void _viv_activate_preload(void);
+static void _viv_add_current_path_to_playlist(void);
+static void _viv_animation_pause(void);
+static void _viv_append_admin_param(wchar_t *wbuf,const utf8_t *param);
+static void _viv_blank(void);
+static void _viv_cat_command_menu_path(wchar_t *wbuf,int menu_index);
+static void _viv_cat_key_mod(wchar_t *wbuf,int vk,const utf8_t *default_keytext);
+static void _viv_center_listbox_item(HWND listbox_hwnd,int item_index);
+static void _viv_check_menus(HMENU hmenu);
+static void _viv_clear(void);
+static void _viv_clear_frames(_viv_frame_t *frames,int loaded_count);
+static void _viv_clear_last(void);
+static void _viv_clear_loading_preload(void);
+static void _viv_clear_preload(void);
+static void _viv_clear_preload_frames(void);
+static void _viv_close_existing_process(void);
+static void _viv_command(int command);
+static void _viv_command_line_options(void);
+static void _viv_command_with_is_key_repeat(int command,int is_key_repeat);
+static void _viv_controls_show(int show);
+static void _viv_copy(int cut);
+static void _viv_copy_filename(void);
+static void _viv_copy_image(void);
+static void _viv_delete(int permanently);
+static void _viv_delete_color_button_bitmap(HWND hwnd);
+static void _viv_do_initial_shuffle(void);
+static void _viv_do_left_click_action(int action);
+static void _viv_do_mousewheel_action(int action,int delta,int x,int y);
+static void _viv_doing_cancel(void);
+static void _viv_dst_pos_set(int x,int y);
+static void _viv_dst_zoom_set(int x,int y);
+static void _viv_edit_key_remove_currently_used_by(struct _viv_key_list_s *keylist,DWORD keyflags);
+static void _viv_edit_key_set_key(HWND hwnd,DWORD key_flags);
+static void _viv_edit_rotate(int counterclockwise);
+static void _viv_exit(void);
+static void _viv_file_edit(void);
+static void _viv_file_preview(void);
+static void _viv_file_print(void);
+static void _viv_file_set_desktop_wallpaper(void);
+static void _viv_frame_prev(void);
+static void _viv_frame_skip(int size);
+static void _viv_frame_step(void);
+static void _viv_get_command_name(wchar_t *wbuf,int command_index);
+static void _viv_get_exe_filename(wchar_t filename[STRING_SIZE]);
+static void _viv_get_key_text(wchar_t *wbuf,DWORD keyflags);
+static void _viv_get_menu_display_name(wchar_t *buf,const utf8_t *menu_name);
+static void _viv_get_render_size(int *prw,int *prh);
+static void _viv_get_src_pixel_rgb(int src_x,int src_y,COLORREF *out_colorref);
+static void _viv_hide_cursor(void);
+static void _viv_home(int end,int is_preload);
+static void _viv_increase_animation_rate(int dec);
+static void _viv_increase_rate(int dec);
+static void _viv_install_association(DWORD flags);
+static void _viv_install_association_by_extension(const char *association,const char *description,const char *icon_location);
+static void _viv_install_copy_file(const wchar_t *install_path,const wchar_t *temp_path,const utf8_t *filename,int critical);
+static void _viv_install_start_menu_shortcuts(void);
+static void _viv_jumpto_on_search(HWND hwnd);
+static void _viv_jumpto_on_size(HWND hwnd);
+static void _viv_jumpto_open_sel(HWND hwnd);
+static void _viv_key_add(struct _viv_key_list_s *key_list,int command_index,DWORD keyflags);
+static void _viv_key_clear(struct _viv_key_list_s *key_list,int command_index);
+static void _viv_key_clear_all(struct _viv_key_list_s *list);
+static void _viv_key_list_copy(struct _viv_key_list_s *dst,const struct _viv_key_list_s *src);
+static void _viv_key_list_init(struct _viv_key_list_s *list);
+static void _viv_key_remove(struct _viv_key_list_s *keylist,int command_index,DWORD keyflags);
+static void _viv_kill(void);
+static void _viv_mipmap_free(_viv_mipmap_t *mipmap);
+static void _viv_mousemove(void);
+static void _viv_nav_item_add(WIN32_FIND_DATA *fd);
+static void _viv_nav_item_free_all(void);
+static void _viv_on_size(void);
+static void _viv_open(WIN32_FIND_DATA *fd,int is_preload);
+static void _viv_open_file_location(void);
+static void _viv_open_preload(void);
+static void _viv_options(void);
+static void _viv_options_edit_key(HWND hwnd,int key_index);
+static void _viv_options_edit_key_changed(HWND hwnd);
+static void _viv_options_key_list_sel_change(HWND hwnd,int previous_key_index);
+static void _viv_options_remove_key(HWND hwnd);
+static void _viv_options_treeview_changed(HWND hwnd);
+static void _viv_options_update_sheild(HWND hwnd);
+static void _viv_pause(void);
+static void _viv_playlist_add_current_if_empty(void);
+static void _viv_playlist_add_filename(const wchar_t *filename);
+static void _viv_playlist_add_path(const wchar_t *full_path_and_filename);
+static void _viv_playlist_clearall(void);
+static void _viv_playlist_delete(const WIN32_FIND_DATA *fd);
+static void _viv_playlist_rename(const wchar_t *old_filename,const wchar_t *new_filename);
+static void _viv_preload_next(void);
+static void _viv_process_command_line(wchar_t *cl);
+static void _viv_process_pending_clear(void);
+static void _viv_properties(void);
+static void _viv_refresh(void);
+static void _viv_rename(void);
+static void _viv_reply_clear_all(void);
+static void _viv_reply_free(_viv_reply_t *e);
+static void _viv_reset_animation_rate(void);
+static void _viv_search_everything(int add);
+static void _viv_send_random_everything_search(void);
+static void _viv_set_clipboard_image(void);
+static void _viv_set_custom_rate(void);
+static void _viv_set_rate(int rate);
+static void _viv_show_cursor(void);
+static void _viv_show_jumpto(void);
+static void _viv_shuffle_playlist(void);
+static void _viv_slideshow(void);
+static void _viv_start_first_frame(void);
+static void _viv_start_hide_cursor_timer(void);
+static void _viv_start_move_window(void);
+static void _viv_status_set(int part,const wchar_t *text);
+static void _viv_status_set_temp_text(wchar_t *text);
+static void _viv_status_show(int show);
+static void _viv_status_update(void);
+static void _viv_status_update_slideshow_rate(void);
+static void _viv_status_update_temp_animation_rate(void);
+static void _viv_status_update_temp_pos_zoom(void);
+static void _viv_stretch_blt(HDC dst_hdc,int dst_x,int dst_y,int dst_wide,int dst_high,HDC src_hdc,int src_wide,int src_high,int clip_x,int clip_y,int clip_wide,int clip_high);
+static void _viv_timer_start(void);
+static void _viv_timer_stop(void);
+static void _viv_toggle_fullscreen(void);
+static void _viv_toolbar_update_buttons(void);
+static void _viv_uninstall_association(DWORD flags);
+static void _viv_uninstall_association_by_extension(const char *association);
+static void _viv_uninstall_delete_file(const wchar_t *path,const utf8_t *filename);
+static void _viv_uninstall_start_menu_shortcuts(void);
+static void _viv_update_1to1_scroll(int x,int y);
+static void _viv_update_color_button_bitmap(HWND hwnd);
+static void _viv_update_frame(void);
+static void _viv_update_ontop(void);
+static void _viv_update_prevent_sleep(void);
+static void _viv_update_show_cursor(void);
+static void _viv_update_src_pixel(int force,int update_statusbar);
+static void _viv_update_title(void);
+static void _viv_update_title_preview(HWND hwnd);
+static void _viv_view_1to1(void);
+static void _viv_view_scroll(int mx,int my);
+static void _viv_view_set(int view_x,int view_y,int invalidate);
+static void _viv_zoom_in(int out,int have_xy,int x,int y);
+static void viv_copy_current_image_to_last_image(void);
+static volatile int _viv_load_image_terminate = 0;
+static wchar_t *_viv_last_open_file = 0;
+static wchar_t *_viv_last_open_folder = 0;
+static wchar_t *_viv_load_image_filename = 0;
+static wchar_t *_viv_random = 0; // temp shuffle.
+static wchar_t *_viv_status_temp_text = 0;
 
 // MF_OWNERDRAW = don't show in menu.
 static _viv_command_t _viv_commands[] = 
@@ -1131,12 +1130,18 @@ HMODULE LoadUnicowsProc(void)
 
 static void _viv_update_titlebar_visibility(void)
 {
-	debug_printf("_viv_update_titlebar_visibility called, config = %d, fullscreen = %d, mouseover = %d\n",
-		config_retractable_titlebar, _viv_is_fullscreen, _viv_is_mouseover);
+	static int last_show_title = -1;
+	static DWORD last_update_time = 0;
 
 	if (!config_retractable_titlebar) {
 		return;
 	}
+
+	DWORD current_time = GetTickCount();
+	if (current_time - last_update_time < 100) {
+		return;
+	}
+	last_update_time = current_time;
 
 	if (_viv_is_fullscreen) {
 		DWORD style = GetWindowLong(_viv_hwnd, GWL_STYLE);
@@ -1145,10 +1150,12 @@ static void _viv_update_titlebar_visibility(void)
 			SetWindowLong(_viv_hwnd, GWL_STYLE, style);
 			SetWindowPos(_viv_hwnd, NULL, 0, 0, 0, 0,
 				SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
-			debug_printf("Fullscreen: title bar hidden\n");
-			_viv_on_size();
+			if (_viv_image_wide > 0 && _viv_image_high > 0) {
+				_viv_on_size();
+			}
 			InvalidateRect(_viv_hwnd, NULL, TRUE);
 		}
+		last_show_title = -1;
 		return;
 	}
 
@@ -1161,43 +1168,41 @@ static void _viv_update_titlebar_visibility(void)
 		GetWindowRect(_viv_hwnd, &rect);
 
 		int diff = pt.y - rect.top;
-		debug_printf("Mouse position: y=%d, window top=%d, diff=%d\n", pt.y, rect.top, diff);
-
-		// DEBUG:
-		if (diff < 200) {
+		if (diff >= 0 && diff < 50) {
 			show_title = 1;
-			debug_printf("show_title = 1 (mouse near top, diff: %d)\n", diff);
 		}
 	}
 
-	debug_printf("mouseover = %d, show_title = %d\n", _viv_is_mouseover, show_title);
+	if (show_title == last_show_title) {
+		return;
+	}
+	last_show_title = show_title;
 
 	DWORD style = GetWindowLong(_viv_hwnd, GWL_STYLE);
-	debug_printf("Current style: 0x%08X, WS_CAPTION: %d\n", style, (style & WS_CAPTION) ? 1 : 0);
-
 	DWORD new_style = style;
 
 	if (show_title) {
 		new_style |= WS_CAPTION | WS_SYSMENU;
-		debug_printf("Adding WS_CAPTION\n");
 	}
 	else {
 		new_style &= ~(WS_CAPTION | WS_SYSMENU);
-		debug_printf("Removing WS_CAPTION\n");
 	}
-
-	debug_printf("New style: 0x%08X, WS_CAPTION: %d\n", new_style, (new_style & WS_CAPTION) ? 1 : 0);
 
 	if (style != new_style) {
-		debug_printf("Changing window style\n");
+		RECT window_rect;
+		GetWindowRect(_viv_hwnd, &window_rect);
+
 		SetWindowLong(_viv_hwnd, GWL_STYLE, new_style);
-		SetWindowPos(_viv_hwnd, NULL, 0, 0, 0, 0,
-			SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
-		_viv_on_size();
+		SetWindowPos(_viv_hwnd, NULL,
+			window_rect.left, window_rect.top,
+			window_rect.right - window_rect.left,
+			window_rect.bottom - window_rect.top,
+			SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+
+		if (_viv_image_wide > 0 && _viv_image_high > 0) {
+			_viv_on_size();
+		}
 		InvalidateRect(_viv_hwnd, NULL, TRUE);
-	}
-	else {
-		debug_printf("Style unchanged (style already matches)\n");
 	}
 }
 
@@ -1572,8 +1577,8 @@ static void _viv_on_size(void)
 		RECT rect;
 		int wide;
 		int high;
-		
-		GetClientRect(_viv_hwnd,&rect);
+
+		GetClientRect(_viv_hwnd, &rect);
 		wide = rect.right - rect.left;
 		high = rect.bottom - rect.top;
 
@@ -1582,59 +1587,60 @@ static void _viv_on_size(void)
 			if (!_viv_is_fullscreen)
 			{
 				int is_maximized;
-				
+
 				is_maximized = _viv_is_window_maximized(_viv_hwnd);
-				
+
 				config_maximized = is_maximized;
-				
+
 				if (!is_maximized)
 				{
 					RECT window_rect;
-					
-					GetWindowRect(_viv_hwnd,&window_rect);
-					
+
+					GetWindowRect(_viv_hwnd, &window_rect);
+
 					config_wide = window_rect.right - window_rect.left;
 					config_high = window_rect.bottom - window_rect.top;
 				}
 			}
 		}
-		
+
 		if (_viv_status_hwnd)
 		{
 			_viv_status_update();
-			
-			SendMessage(_viv_status_hwnd,WM_SIZE,0,0);
-			
+
+			SendMessage(_viv_status_hwnd, WM_SIZE, 0, 0);
+
 			high -= _viv_get_status_high();
 		}
 
 		if (_viv_toolbar_hwnd)
 		{
 			int toolbar_wide;
-			
+
 			toolbar_wide = _viv_toolbar_get_wide();
-			
-			SetWindowPos(_viv_rebar_hwnd,0,0,high - _viv_get_controls_high(),wide,_viv_get_controls_high(),SWP_NOZORDER|SWP_NOACTIVATE);
-			SetWindowPos(_viv_toolbar_hwnd,0,(wide / 2) - (toolbar_wide /2),6,toolbar_wide,_viv_get_controls_high() - 6,SWP_NOZORDER|SWP_NOACTIVATE);
-			
+
+			SetWindowPos(_viv_rebar_hwnd, 0, 0, high - _viv_get_controls_high(), wide, _viv_get_controls_high(), SWP_NOZORDER | SWP_NOACTIVATE);
+			SetWindowPos(_viv_toolbar_hwnd, 0, (wide / 2) - (toolbar_wide / 2), 6, toolbar_wide, _viv_get_controls_high() - 6, SWP_NOZORDER | SWP_NOACTIVATE);
+
 			high -= _viv_get_controls_high();
 		}
-		
+
+		if (_viv_image_wide > 0 && _viv_image_high > 0)
 		{
-		
 			int rw;
 			int rh;
 			double new_view_x;
 			double new_view_y;
 
-			_viv_get_render_size(&rw,&rh);
-		
-			new_view_x = (int)(((_viv_view_ix * rw) / _viv_image_wide) + 0.5) + (((_viv_dst_pos_x - 250) * (wide*2)) / 1000) - (wide / 2) - (rw / 2);
-			new_view_y = (int)(((_viv_view_iy * rh) / _viv_image_high) + 0.5) + (((_viv_dst_pos_y - 250) * (high*2)) / 1000) - (high / 2) - (rh / 2);
-	
-	debug_printf("RESTORE VIEW x %d y %d ix %d iy %d rw %d rh %d wide %d high %d\n",(int)(new_view_x),(int)(new_view_y),(int)_viv_view_ix,(int)_viv_view_iy,rw,rh,wide,high)		;
-	//		_viv_view_set((int)(_viv_view_ix * (double)rw),(int)(_viv_view_iy * (double)rh),1);
-			_viv_view_set((int)new_view_x,(int)new_view_y,1);
+			_viv_get_render_size(&rw, &rh);
+
+			if (rw > 0 && rh > 0 && _viv_image_wide > 0 && _viv_image_high > 0)
+			{
+				new_view_x = (int)(((_viv_view_ix * rw) / _viv_image_wide) + 0.5) + (((_viv_dst_pos_x - 250) * (wide * 2)) / 1000) - (wide / 2) - (rw / 2);
+				new_view_y = (int)(((_viv_view_iy * rh) / _viv_image_high) + 0.5) + (((_viv_dst_pos_y - 250) * (high * 2)) / 1000) - (high / 2) - (rh / 2);
+
+				_viv_view_set((int)new_view_x, (int)new_view_y, 1);
+			}
 		}
 
 		_viv_toolbar_update_buttons();
@@ -3126,7 +3132,7 @@ debug_printf("NEXT AFTER LOAD %S\n",fd->cFileName);
 			break;
 		}
 			
-		if (config_retractable_titlebar) SetTimer(_viv_hwnd, VIV_ID_CHECK_MOUSE_TIMER, 50, NULL);
+		if (config_retractable_titlebar) SetTimer(_viv_hwnd, VIV_ID_CHECK_MOUSE_TIMER, 100, NULL);
 
 		case WM_TIMER:
 		{
@@ -5140,8 +5146,6 @@ static int _viv_init(int nCmdShow)
 	_viv_key_list = mem_alloc(sizeof(_viv_key_list_t));
 	
 	_viv_key_list_init(_viv_key_list);
-
-
 	
 	// setup keys.
 	{
@@ -5204,8 +5208,20 @@ static int _viv_init(int nCmdShow)
 	os_zero_memory(_viv_load_fd,sizeof(WIN32_FIND_DATA));
 	
 	debug_printf("CoInitializeEx\n");
-	CoInitializeEx(NULL, COINIT_APARTMENTTHREADED|COINIT_DISABLE_OLE1DDE);
-	
+	HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+	if (FAILED(hr))
+	{
+		debug_printf("ConInitializeEx failed with error: 0x%08%\n", hr);
+		if (hr == RPC_E_CHANGED_MODE)
+		{
+			debug_printf("COM already initialized in different mode\n");
+		}
+		else
+		{
+			return FALSE;
+		}
+	}
+
     // this resolves ATL window thunking problem when Microsoft Layer for Unicode (MSLU) is used
     DefWindowProc(NULL,0,0,0);
     
@@ -5238,6 +5254,12 @@ static int _viv_init(int nCmdShow)
 
 	// load settings
 	config_load_settings();
+
+	if (config_retractable_titlebar)
+	{
+		config_show_caption = 0; // Disable standard titlebar
+		debug_printf("Applying retractable titlebar in _viv_init\n");
+	}
 	
 	// config_maximized will be overwritten when we show are normal window
 	// so save it now and apply it later.
@@ -5252,6 +5274,7 @@ static int _viv_init(int nCmdShow)
 			return 0;
 		}
 	}
+
 
 	// mutex
 	if (!config_multiple_instances)
@@ -5374,6 +5397,8 @@ static int _viv_init(int nCmdShow)
 		rect.left,rect.top,rect.right - rect.left,rect.bottom - rect.top,
 		0,config_show_menu ? _viv_hmenu : NULL,os_hinstance,NULL);
 	
+	if (config_retractable_titlebar) _viv_update_titlebar_visibility();
+
 	if ((!config_show_caption) || (!config_show_thickframe))
 	{
 		_viv_update_frame();
@@ -6415,6 +6440,8 @@ static int _viv_is_msg(MSG *msg)
 
 static void _viv_view_set(int view_x,int view_y,int invalidate)
 {
+	if (_viv_image_wide == 0 || _viv_image_high == 0) return;
+
 	RECT rect;
 	int wide;
 	int high;
@@ -6426,16 +6453,16 @@ static void _viv_view_set(int view_x,int view_y,int invalidate)
 	high = rect.bottom - rect.top - _viv_get_status_high() - _viv_get_controls_high();
 
 	_viv_get_render_size(&rw,&rh);
-/*		
-		if (_viv_zoom_pos == 1)
-		{
-			if ((rw < _viv_image_wide) || (rw < _viv_image_wide))
-			{
-				rw = _viv_image_wide;
-				rh = _viv_image_high;
-			}
-		}
-*/
+	
+	GetClientRect(_viv_hwnd, &rect);
+	wide = rect.right - rect.left;
+	high = rect.bottom - rect.top - _viv_get_status_high() - _viv_get_controls_high();
+
+	if (wide <= 0 || high <= 0) return;
+
+	_viv_get_render_size(&rw, &rh);
+
+	if (rw <= 0 || rh <= 0) return;
 
 	{
 		int rx;
@@ -8701,24 +8728,22 @@ static INT_PTR CALLBACK _viv_options_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARA
 						config_loop_animations_once = IsDlgButtonChecked(view_page,IDC_LOOP_ANIMATIONS_ONCE) == BST_CHECKED ? 1 : 0;
 						config_preload_next = IsDlgButtonChecked(view_page,IDC_PRELOAD_NEXT_IMAGE) == BST_CHECKED ? 1 : 0;
 						config_cache_last = IsDlgButtonChecked(view_page,IDC_CACHE_LAST_IMAGE) == BST_CHECKED ? 1 : 0;
-						
-						// FIX:
-						// DEBUG RETRACTABLE BAR:
-#ifdef IDC_RETRACTABLE_TITLEBAR
 						config_retractable_titlebar = IsDlgButtonChecked(view_page, IDC_RETRACTABLE_TITLEBAR) == BST_CHECKED;
+
 						debug_printf("config_retractable_titlebar = %d\n", config_retractable_titlebar);
 
-						// Если включен retractable title bar, отключаем стандартный заголовок
-						if (config_retractable_titlebar) {
+						if (config_retractable_titlebar) 
+						{
 							config_show_caption = 0;
 							debug_printf("Disabled config_show_caption for retractable mode\n");
+							_viv_update_titlebar_visibility();
 						}
-						else {
-							// Если выключен, восстанавливаем заголовок (если нужно)
-							// config_show_caption = 1; // или сохранить предыдущее значение
+						else 
+						{
 							debug_printf("Retractable disabled\n");
+							config_show_caption = 1;
+							_viv_update_titlebar_visibility();
 						}
-#endif
 
 						// copy keys.
 						_viv_key_list_copy(_viv_key_list,(_viv_key_list_t *)GetWindowLongPtr(GetDlgItem(controls_page,IDC_COMMANDS_LIST),GWLP_USERDATA));

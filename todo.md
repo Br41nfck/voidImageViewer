@@ -3,7 +3,7 @@
 ## UI & Display
 - [X] Add UI option for config_title_bar_format
 - [X] Option to show full path like MPC
-- [ ] Borderless window with retractable title bar
+- [X] Borderless window with retractable title bar
 - [ ] Dark mode (system theme support)
 - [ ] Dark skin (use system theme)
 - [ ] High DPI icons

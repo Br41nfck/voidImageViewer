@@ -22,9 +22,14 @@
 // Operating System calls
 
 #include "viv.h"
-
+#include <windows.h>
 #define _OS_QSORT_CUTOFF	8            /* testing shows that this is good value */
 #define _OS_QSORT_STKSIZ	((8*sizeof(void*)) - 2)
+
+unsigned int os_GetUserDefaultUILanguage(void)
+{
+	return GetUserDefaultUILanguage();
+}
 
 typedef struct _os_COMDLG_FILTERSPEC_s 
 {
@@ -931,7 +936,7 @@ void os_init(void)
 	_os_gdi32_hmodule = LoadLibraryA("gdi32.dll");
 	if (_os_gdi32_hmodule)
 	{
-		os_GetLayout = (void *)GetProcAddress(_os_user32_hmodule,"GetLayout");
+		os_GetLayout = (void *)GetProcAddress(_os_gdi32_hmodule,"GetLayout");
 	}
 
 	_os_gdiplus_hmodule = LoadLibraryA("gdiplus.dll");

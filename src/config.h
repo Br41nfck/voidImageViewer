@@ -59,6 +59,7 @@ typedef struct config_key_s
 
 void config_load_settings(void);
 void config_save_settings(int appdata);
+void config_apply_settings(void);
 
 extern BYTE config_appdata;
 extern BYTE config_keep_centered;

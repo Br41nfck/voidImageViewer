@@ -1,3 +1,4 @@
+#include "localization.h"
 //
 // Copyright 2026 hesphoros
 // 

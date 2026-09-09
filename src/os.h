@@ -84,6 +84,7 @@ int os_get_orientation(const wchar_t *filename);
 void os_adjust_window_rect(HWND hwnd,RECT *window_rect,int window_x,int window_y,int client_wide,int client_high);
 DWORD os_get_window_style(HWND hwnd);
 DWORD os_get_window_ex_style(HWND hwnd);
+int os_GetUserDefaultUILanguage(void);
 
 extern HINSTANCE os_hinstance;
 extern DWORD os_major_version;
