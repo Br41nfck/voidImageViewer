@@ -89,6 +89,8 @@
 #define IDC_AUTO_ZOOM                   1050
 #define IDC_COMBO4                      1051
 #define IDC_TITLE_BAR_FORMAT_COMBO		1052
+#define IDC_RETRACTABLE_TITLEBAR		1053
+
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
@@ -96,7 +98,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        130
 #define _APS_NEXT_COMMAND_VALUE         40048
-#define _APS_NEXT_CONTROL_VALUE         1052
+#define _APS_NEXT_CONTROL_VALUE         1054
 #define _APS_NEXT_SYMED_VALUE           109
 #endif
 #endif

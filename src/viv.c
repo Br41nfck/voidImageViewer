@@ -1128,6 +1128,78 @@ HMODULE LoadUnicowsProc(void)
 	return NULL;
 }
 
+static void _viv_update_titlebar_visibility(void)
+{
+	debug_printf("_viv_update_titlebar_visibility called, config = %d, fullscreen = %d, mouseover = %d\n",
+		config_retractable_titlebar, _viv_is_fullscreen, _viv_is_mouseover);
+
+	if (!config_retractable_titlebar) {
+		return;
+	}
+
+	if (_viv_is_fullscreen) {
+		DWORD style = GetWindowLong(_viv_hwnd, GWL_STYLE);
+		if (style & WS_CAPTION) {
+			style &= ~(WS_CAPTION | WS_SYSMENU);
+			SetWindowLong(_viv_hwnd, GWL_STYLE, style);
+			SetWindowPos(_viv_hwnd, NULL, 0, 0, 0, 0,
+				SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+			debug_printf("Fullscreen: title bar hidden\n");
+			_viv_on_size();
+			InvalidateRect(_viv_hwnd, NULL, TRUE);
+		}
+		return;
+	}
+
+	int show_title = 0;
+
+	if (_viv_is_mouseover) {
+		POINT pt;
+		RECT rect;
+		GetCursorPos(&pt);
+		GetWindowRect(_viv_hwnd, &rect);
+
+		int diff = pt.y - rect.top;
+		debug_printf("Mouse position: y=%d, window top=%d, diff=%d\n", pt.y, rect.top, diff);
+
+		// DEBUG:
+		if (diff < 200) {
+			show_title = 1;
+			debug_printf("show_title = 1 (mouse near top, diff: %d)\n", diff);
+		}
+	}
+
+	debug_printf("mouseover = %d, show_title = %d\n", _viv_is_mouseover, show_title);
+
+	DWORD style = GetWindowLong(_viv_hwnd, GWL_STYLE);
+	debug_printf("Current style: 0x%08X, WS_CAPTION: %d\n", style, (style & WS_CAPTION) ? 1 : 0);
+
+	DWORD new_style = style;
+
+	if (show_title) {
+		new_style |= WS_CAPTION | WS_SYSMENU;
+		debug_printf("Adding WS_CAPTION\n");
+	}
+	else {
+		new_style &= ~(WS_CAPTION | WS_SYSMENU);
+		debug_printf("Removing WS_CAPTION\n");
+	}
+
+	debug_printf("New style: 0x%08X, WS_CAPTION: %d\n", new_style, (new_style & WS_CAPTION) ? 1 : 0);
+
+	if (style != new_style) {
+		debug_printf("Changing window style\n");
+		SetWindowLong(_viv_hwnd, GWL_STYLE, new_style);
+		SetWindowPos(_viv_hwnd, NULL, 0, 0, 0, 0,
+			SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+		_viv_on_size();
+		InvalidateRect(_viv_hwnd, NULL, TRUE);
+	}
+	else {
+		debug_printf("Style unchanged (style already matches)\n");
+	}
+}
+
 static void _viv_update_title(void)
 {
 	wchar_t window_title[STRING_SIZE+STRING_SIZE];
@@ -3482,6 +3554,7 @@ debug_printf("NEXT AFTER LOAD %S\n",fd->cFileName);
 			{
 				_viv_update_show_cursor();
 			}
+
 			break;
 			
 		case WM_MOUSELEAVE:
@@ -3506,6 +3579,10 @@ debug_printf("NEXT AFTER LOAD %S\n",fd->cFileName);
 			_viv_show_cursor();
 //			_viv_tooltip_hide();
 			_viv_update_src_pixel(0,1);
+
+			if (config_retractable_titlebar) {
+				_viv_update_titlebar_visibility();
+			}
 
 			break;
 			
@@ -3548,6 +3625,12 @@ debug_printf("NEXT AFTER LOAD %S\n",fd->cFileName);
 							SetCursorPos(_viv_mdoing_x,_viv_mdoing_y);
 						}
 					}
+
+
+					if (config_retractable_titlebar)
+					{
+						_viv_update_titlebar_visibility();
+					}
 					
 					break;
 			
@@ -3585,6 +3668,8 @@ debug_printf("NEXT AFTER LOAD %S\n",fd->cFileName);
 			}
 			
 			_viv_update_src_pixel(0,1);
+
+			if (config_retractable_titlebar) _viv_update_titlebar_visibility();
 			
 			break;
 			
@@ -8178,7 +8263,7 @@ static INT_PTR CALLBACK _viv_options_view_proc(HWND hwnd, UINT msg, WPARAM wPara
 
 		// Auto zoom
 		CheckDlgButton(hwnd, IDC_AUTO_ZOOM, config_auto_zoom ? BST_CHECKED : BST_UNCHECKED);
-
+		
 		// Auto zoom type
 		os_ComboBox_AddString(hwnd, IDC_COMBO4, (const utf8_t*)"50%");
 		os_ComboBox_AddString(hwnd, IDC_COMBO4, (const utf8_t*)"100%");
@@ -8201,6 +8286,8 @@ static INT_PTR CALLBACK _viv_options_view_proc(HWND hwnd, UINT msg, WPARAM wPara
 		CheckDlgButton(hwnd, IDC_LOOP_ANIMATIONS_ONCE, config_loop_animations_once ? BST_CHECKED : BST_UNCHECKED);
 		CheckDlgButton(hwnd, IDC_PRELOAD_NEXT_IMAGE, config_preload_next ? BST_CHECKED : BST_UNCHECKED);
 		CheckDlgButton(hwnd, IDC_CACHE_LAST_IMAGE, config_cache_last ? BST_CHECKED : BST_UNCHECKED);
+
+		CheckDlgButton(hwnd, IDC_RETRACTABLE_TITLEBAR, config_retractable_titlebar ? BST_CHECKED : BST_UNCHECKED);
 
 		SetWindowLongPtr(GetDlgItem(hwnd, IDC_WINDOWEDBACKGROUNDCOLOR), GWLP_USERDATA,
 			RGB(config_windowed_background_color_r, config_windowed_background_color_g, config_windowed_background_color_b));
@@ -8584,9 +8671,29 @@ static INT_PTR CALLBACK _viv_options_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARA
 						config_preload_next = IsDlgButtonChecked(view_page,IDC_PRELOAD_NEXT_IMAGE) == BST_CHECKED ? 1 : 0;
 						config_cache_last = IsDlgButtonChecked(view_page,IDC_CACHE_LAST_IMAGE) == BST_CHECKED ? 1 : 0;
 						
+						// FIX:
+						// DEBUG RETRACTABLE BAR:
+#ifdef IDC_RETRACTABLE_TITLEBAR
+						config_retractable_titlebar = IsDlgButtonChecked(view_page, IDC_RETRACTABLE_TITLEBAR) == BST_CHECKED;
+						debug_printf("config_retractable_titlebar = %d\n", config_retractable_titlebar);
+
+						// Если включен retractable title bar, отключаем стандартный заголовок
+						if (config_retractable_titlebar) {
+							config_show_caption = 0;
+							debug_printf("Disabled config_show_caption for retractable mode\n");
+						}
+						else {
+							// Если выключен, восстанавливаем заголовок (если нужно)
+							// config_show_caption = 1; // или сохранить предыдущее значение
+							debug_printf("Retractable disabled\n");
+						}
+#endif
+
 						// copy keys.
 						_viv_key_list_copy(_viv_key_list,(_viv_key_list_t *)GetWindowLongPtr(GetDlgItem(controls_page,IDC_COMMANDS_LIST),GWLP_USERDATA));
 						
+
+
 						// reinit menu.
 						{
 							HMENU new_hmenu;
@@ -8616,14 +8723,22 @@ static INT_PTR CALLBACK _viv_options_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARA
 							os_shell_execute(0,exe_filename,1,NULL,params);
 						}
 
-						// save settings to disk						
+
+						_viv_update_frame();
+
+#ifdef IDC_RETRACTABLE_TITLEBAR
+						if (config_retractable_titlebar) {
+							_viv_update_titlebar_visibility();
+						}
+#endif
+
+						// SAVE SETTINGS TO DISK
 						config_save_settings(config_appdata);
 					}
-				
+
 					EndDialog(hwnd,0);
 					break;
 			}
-
 			break;
 	}
 	
@@ -8959,21 +9074,20 @@ static void _viv_timer_start(void)
 static void _viv_mousemove(void)
 {
 	POINT pt;
-	
+
 	GetCursorPos(&pt);
-	
-//	debug_printf("MOUSEMOVE %d %d, last %d %d\n",pt.x,pt.y,_viv_mousemove_x,_viv_mousemove_y);
-	
+	_viv_is_mouseover = 1;
+
 	if ((pt.x != _viv_mousemove_x) || (pt.y != _viv_mousemove_y))
 	{
 		_viv_show_cursor();
-		
+
 		if (!_viv_should_show_cursor())
 		{
 			_viv_start_hide_cursor_timer();
-		}		
+		}
 	}
-	
+
 	_viv_mousemove_x = pt.x;
 	_viv_mousemove_y = pt.y;
 }
@@ -9587,88 +9701,113 @@ static void _viv_update_frame(void)
 		RECT newrect;
 		RECT oldrect;
 		int was_maximized;
-		
+
 		was_maximized = 0;
 
 		// get out of maximized state.
 		if (_viv_is_window_maximized(_viv_hwnd))
 		{
-			ShowWindow(_viv_hwnd,SW_RESTORE);
+			ShowWindow(_viv_hwnd, SW_RESTORE);
 			was_maximized = 1;
 		}
-		
-		oldstyle = GetWindowLong(_viv_hwnd,GWL_STYLE);
-		newstyle = oldstyle;
-		
-		GetClientRect(_viv_hwnd,&clientrect);
-		debug_printf("clientrect %d %d %d %d\n",clientrect.left,clientrect.top,clientrect.right,clientrect.bottom);
-		
-		CopyRect(&oldrect,&clientrect);
-		AdjustWindowRect(&oldrect,oldstyle,GetMenu(_viv_hwnd) ? TRUE : FALSE);
-		
-		oldrect.bottom += _viv_get_status_high() + _viv_get_controls_high();
-		
-		debug_printf("oldrect %d %d %d %d %d\n",oldrect.left,oldrect.top,oldrect.right,oldrect.bottom,GetMenu(_viv_hwnd) ? TRUE : FALSE);
-	
-		if (config_show_caption)	
-		{
+
+		// --- RETRACTABLE TITLE BAR ---
+#ifdef IDC_RETRACTABLE_TITLEBAR
+		if (config_retractable_titlebar) {
+			// Если включен retractable - принудительно убираем заголовок
+			newstyle &= ~(WS_CAPTION | WS_SYSMENU);
+			debug_printf("retractable: forced removing WS_CAPTION\n");
+		}
+		else {
+			// Иначе используем config_show_caption
+			if (config_show_caption) {
+				newstyle |= WS_CAPTION | WS_SYSMENU;
+			}
+			else {
+				newstyle &= ~(WS_CAPTION | WS_SYSMENU);
+			}
+		}
+#else
+		if (config_show_caption) {
 			newstyle |= WS_CAPTION | WS_SYSMENU;
 		}
-		else
-		{
+		else {
 			newstyle &= ~(WS_CAPTION | WS_SYSMENU);
 		}
-		
-		if (config_show_thickframe)	
-		{
+#endif
+		// -----------------------------
+
+
+		oldstyle = GetWindowLong(_viv_hwnd, GWL_STYLE);
+		newstyle = oldstyle;
+
+		GetClientRect(_viv_hwnd, &clientrect);
+		debug_printf("clientrect %d %d %d %d\n", clientrect.left, clientrect.top, clientrect.right, clientrect.bottom);
+
+		CopyRect(&oldrect, &clientrect);
+		AdjustWindowRect(&oldrect, oldstyle, GetMenu(_viv_hwnd) ? TRUE : FALSE);
+
+		oldrect.bottom += _viv_get_status_high() + _viv_get_controls_high();
+
+		debug_printf("oldrect %d %d %d %d %d\n", oldrect.left, oldrect.top, oldrect.right, oldrect.bottom, GetMenu(_viv_hwnd) ? TRUE : FALSE);
+
+		if (config_retractable_titlebar) {
+			newstyle &= ~(WS_CAPTION | WS_SYSMENU);
+			debug_printf("retractable: forced removing WS_CAPTION\n");
+		}
+		else {
+			if (config_show_caption) {
+				newstyle |= WS_CAPTION | WS_SYSMENU;
+			}
+			else {
+				newstyle &= ~(WS_CAPTION | WS_SYSMENU);
+			}
+		}
+
+		if (config_show_thickframe) {
 			newstyle |= WS_THICKFRAME;
 		}
-		else
-		{
+		else {
 			newstyle &= ~WS_THICKFRAME;
 		}
 
-		if (config_show_menu)	
-		{
-			if (GetMenu(_viv_hwnd) != _viv_hmenu)
-			{
-				SetMenu(_viv_hwnd,_viv_hmenu);
+		if (config_show_menu) {
+			if (GetMenu(_viv_hwnd) != _viv_hmenu) {
+				SetMenu(_viv_hwnd, _viv_hmenu);
 			}
 		}
-		else
-		{
-			if (GetMenu(_viv_hwnd) != 0)
-			{
-				SetMenu(_viv_hwnd,0);
+		else {
+			if (GetMenu(_viv_hwnd) != 0) {
+				SetMenu(_viv_hwnd, 0);
 			}
 		}
-		
+
 		_viv_status_show(config_show_status);
 		_viv_controls_show(config_show_controls);
 
-		CopyRect(&newrect,&clientrect);
-		AdjustWindowRect(&newrect,newstyle,config_show_menu ? TRUE : FALSE);
+		CopyRect(&newrect, &clientrect);
+		AdjustWindowRect(&newrect, newstyle, config_show_menu ? TRUE : FALSE);
 
 		newrect.bottom += _viv_get_status_high() + _viv_get_controls_high();
 
-		debug_printf("newrect %d %d %d %d %d\n",newrect.left,newrect.top,newrect.right,newrect.bottom,config_show_menu ? TRUE : FALSE);
-		
-		GetWindowRect(_viv_hwnd,&windowrect);
-		
+		debug_printf("newrect %d %d %d %d %d\n", newrect.left, newrect.top, newrect.right, newrect.bottom, config_show_menu ? TRUE : FALSE);
+
+		GetWindowRect(_viv_hwnd, &windowrect);
+
 		windowrect.left += newrect.left - oldrect.left;
 		windowrect.top += newrect.top - oldrect.top;
 		windowrect.right += newrect.right - oldrect.right;
 		windowrect.bottom += newrect.bottom - oldrect.bottom;
-	
-		SetWindowLong(_viv_hwnd,GWL_STYLE,newstyle);
-		
-		SetWindowPos(_viv_hwnd,HWND_TOP,windowrect.left,windowrect.top,windowrect.right - windowrect.left,windowrect.bottom - windowrect.top,SWP_FRAMECHANGED|SWP_NOACTIVATE|SWP_NOCOPYBITS);
 
-		// if there is no catpion or thick frame we should not allow maximize
+		SetWindowLong(_viv_hwnd, GWL_STYLE, newstyle);
+
+		SetWindowPos(_viv_hwnd, HWND_TOP, windowrect.left, windowrect.top, windowrect.right - windowrect.left, windowrect.bottom - windowrect.top, SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOCOPYBITS);
+
+		// if there is no caption or thick frame we should not allow maximize
 		// avoid our resize borders when maximized.
 		if ((was_maximized) && (config_show_caption) && (config_show_thickframe))
 		{
-			ShowWindow(_viv_hwnd,SW_MAXIMIZE);
+			ShowWindow(_viv_hwnd, SW_MAXIMIZE);
 		}
 	}
 }
