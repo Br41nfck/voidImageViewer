@@ -1,7 +1,7 @@
 # TODO
 
 ## UI & Display
-- [ ] Add UI option for config_title_bar_format
+- [X] Add UI option for config_title_bar_format
 - [ ] Option to show full path like MPC
 - [ ] Borderless window with retractable title bar
 - [ ] Dark mode (system theme support)
