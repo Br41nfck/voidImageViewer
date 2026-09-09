@@ -26,8 +26,6 @@
 #define _OS_QSORT_CUTOFF	8            /* testing shows that this is good value */
 #define _OS_QSORT_STKSIZ	((8*sizeof(void*)) - 2)
 
-#define _OS_DRAWTEXT_MAX_LEN		(4096-1)
-
 typedef struct _os_COMDLG_FILTERSPEC_s 
 {
 	wchar_t *pszName;
@@ -117,8 +115,7 @@ BOOL (WINAPI *_os_SetDllDirectoryW)(LPCTSTR lpPathName) = 0;
 BOOL (WINAPI *_os_SetDefaultDllDirectories)(DWORD DirectoryFlags) = 0;
 BOOL (WINAPI *os_GetFileAttributesExW)(LPCWSTR lpFileName,GET_FILEEX_INFO_LEVELS fInfoLevelId,LPVOID lpFileInformation) = NULL;
 BOOL (WINAPI *_os_IsDebuggerPresent)(void) = 0;
-EXECUTION_STATE (WINAPI *os_SetThreadExecutionState)(  EXECUTION_STATE esFlags) = NULL;
-LANGID (WINAPI *os_GetUserDefaultUILanguage)(void) = NULL;
+EXECUTION_STATE (WINAPI *_os_SetThreadExecutionState)(  EXECUTION_STATE esFlags) = NULL;
 HRESULT (WINAPI *os_SHOpenFolderAndSelectItems)(LPCITEMIDLIST pidlFolder,UINT cidl,LPCITEMIDLIST *apidl,DWORD dwFlags) = 0;
 int (WINAPI *os_GdiplusStartup)(OUT ULONG_PTR *token,const os_GdiplusStartupInput_t *input,void *output) = 0;
 VOID (WINAPI *os_GdiplusShutdown)(ULONG_PTR token) = 0;
@@ -276,18 +273,17 @@ void os_MonitorRectFromWindow(HWND hwnd,int is_fullscreen,RECT *out_monitor_rect
 	{
 		if (is_fullscreen)
 		{
-			// full screen (which is the client area...)
+			// full screen
 			out_monitor_rect->left = 0;
 			out_monitor_rect->top = 0;
-			out_monitor_rect->right = GetSystemMetrics(SM_CXSCREEN);
-			out_monitor_rect->bottom = GetSystemMetrics(SM_CYSCREEN);
+			out_monitor_rect->right = GetSystemMetrics(SM_CXFULLSCREEN);
+			out_monitor_rect->bottom = GetSystemMetrics(SM_CYFULLSCREEN);
 		}
 		else
 		{
 			// work area
 			SystemParametersInfo(SPI_GETWORKAREA,0,(PVOID)out_monitor_rect,0);
 		}
-debug_printf("FULLSCREEN %d %d %d\n",is_fullscreen,out_monitor_rect->right,out_monitor_rect->bottom)	;
 	}
 }
 
@@ -322,12 +318,10 @@ void os_MonitorRectFromRect(RECT *window_rect,int is_fullscreen,RECT *out_monito
 		if (is_fullscreen)
 		{
 			// full screen
-			// use SM_CXSCREEN for full screen.
-			// SM_CXFULLSCREEN is the client area...
 			out_monitor_rect->left = 0;
 			out_monitor_rect->top = 0;
-			out_monitor_rect->right = GetSystemMetrics(SM_CXSCREEN);
-			out_monitor_rect->bottom = GetSystemMetrics(SM_CYSCREEN);
+			out_monitor_rect->right = GetSystemMetrics(SM_CXFULLSCREEN);
+			out_monitor_rect->bottom = GetSystemMetrics(SM_CYFULLSCREEN);
 		}
 		else
 		{
@@ -372,12 +366,10 @@ void os_MonitorRectFromCursor(int is_fullscreen,RECT *out_monitor_rect)
 		if (is_fullscreen)
 		{
 			// full screen
-			// use SM_CXSCREEN for full screen.
-			// SM_CXFULLSCREEN is the client area...
 			out_monitor_rect->left = 0;
 			out_monitor_rect->top = 0;
-			out_monitor_rect->right = GetSystemMetrics(SM_CXSCREEN);
-			out_monitor_rect->bottom = GetSystemMetrics(SM_CYSCREEN);
+			out_monitor_rect->right = GetSystemMetrics(SM_CXFULLSCREEN);
+			out_monitor_rect->bottom = GetSystemMetrics(SM_CYFULLSCREEN);
 		}
 		else
 		{
@@ -641,47 +633,90 @@ static void _os_qsort_indexes_shortsort(void **lo,void **hi,int (*comp)(const vo
     /* A[i] <= A[j] for i <= j,j > lo,which implies A[i] <= A[j] for i < j,
        so array is sorted */
 }
+/*
+#define _OS_QSORT_SWAP(block,comp,x,y) if (comp(block[y],block[x]) < 0) { void *tmp = block[x]; block[x] = block[y]; block[y] = tmp; }
+
+static void _os_qsort_sort_block16(void **block,int (*comp)(const void *,const void *))
+{
+	_OS_QSORT_SWAP(block,comp,0,1)
+	_OS_QSORT_SWAP(block,comp,2,3)
+	_OS_QSORT_SWAP(block,comp,4,5)
+	_OS_QSORT_SWAP(block,comp,6,7)
+	_OS_QSORT_SWAP(block,comp,8,9)
+	_OS_QSORT_SWAP(block,comp,10,11)
+	_OS_QSORT_SWAP(block,comp,12,13)
+	_OS_QSORT_SWAP(block,comp,14,15)
+	_OS_QSORT_SWAP(block,comp,0,2)
+	_OS_QSORT_SWAP(block,comp,4,6)
+	_OS_QSORT_SWAP(block,comp,8,10)
+	_OS_QSORT_SWAP(block,comp,12,14)
+	_OS_QSORT_SWAP(block,comp,1,3)
+	_OS_QSORT_SWAP(block,comp,5,7)
+	_OS_QSORT_SWAP(block,comp,9,11)
+	_OS_QSORT_SWAP(block,comp,13,15)
+	_OS_QSORT_SWAP(block,comp,0,4)
+	_OS_QSORT_SWAP(block,comp,8,12)
+	_OS_QSORT_SWAP(block,comp,1,5)
+	_OS_QSORT_SWAP(block,comp,9,13)
+	_OS_QSORT_SWAP(block,comp,2,6)
+	_OS_QSORT_SWAP(block,comp,10,14)
+	_OS_QSORT_SWAP(block,comp,3,7)
+	_OS_QSORT_SWAP(block,comp,11,15)
+	_OS_QSORT_SWAP(block,comp,0,8)
+	_OS_QSORT_SWAP(block,comp,1,9)
+	_OS_QSORT_SWAP(block,comp,2,10)
+	_OS_QSORT_SWAP(block,comp,3,11)
+	_OS_QSORT_SWAP(block,comp,4,12)
+	_OS_QSORT_SWAP(block,comp,5,13)
+	_OS_QSORT_SWAP(block,comp,6,14)
+	_OS_QSORT_SWAP(block,comp,7,15)
+	_OS_QSORT_SWAP(block,comp,5,10)
+	_OS_QSORT_SWAP(block,comp,6,9)
+	_OS_QSORT_SWAP(block,comp,3,12)
+	_OS_QSORT_SWAP(block,comp,13,14)
+	_OS_QSORT_SWAP(block,comp,7,11)
+	_OS_QSORT_SWAP(block,comp,1,2)
+	_OS_QSORT_SWAP(block,comp,4,8)
+	_OS_QSORT_SWAP(block,comp,1,4)
+	_OS_QSORT_SWAP(block,comp,7,13)
+	_OS_QSORT_SWAP(block,comp,2,8)
+	_OS_QSORT_SWAP(block,comp,11,14)
+	_OS_QSORT_SWAP(block,comp,5,6)
+	_OS_QSORT_SWAP(block,comp,9,10)
+	_OS_QSORT_SWAP(block,comp,2,4)
+	_OS_QSORT_SWAP(block,comp,11,13)
+	_OS_QSORT_SWAP(block,comp,3,8)
+	_OS_QSORT_SWAP(block,comp,7,12)
+	_OS_QSORT_SWAP(block,comp,6,8)
+	_OS_QSORT_SWAP(block,comp,10,12)
+	_OS_QSORT_SWAP(block,comp,3,5)
+	_OS_QSORT_SWAP(block,comp,7,9)
+	_OS_QSORT_SWAP(block,comp,3,4)
+	_OS_QSORT_SWAP(block,comp,5,6)
+	_OS_QSORT_SWAP(block,comp,7,8)
+	_OS_QSORT_SWAP(block,comp,9,10)
+	_OS_QSORT_SWAP(block,comp,11,12)
+	_OS_QSORT_SWAP(block,comp,6,7)
+	_OS_QSORT_SWAP(block,comp,8,9)
+}
+*/
 
 int os_ComboBox_AddString(HWND hwnd,int id,const utf8_t *s)
 {
 	wchar_t wbuf[STRING_SIZE];
 	
-	string_copy_utf8_string(wbuf,s);
+	string_copy_utf8(wbuf,s);
 	
 	return ComboBox_AddString(GetDlgItem(hwnd,id),wbuf);
-}
-
-int os_ComboBox_AddString_localization_id(HWND hwnd,int id,localization_id_t localization_id)
-{
-	return os_ComboBox_AddString(hwnd,id,localization_get_string(localization_id));
 }
 
 void os_SetDlgItemText(HWND hwnd,int id,const utf8_t *s)
 {	
 	wchar_t wbuf[STRING_SIZE];
 	
-	string_copy_utf8_string(wbuf,s);
+	string_copy_utf8(wbuf,s);
 	
 	SetDlgItemText(hwnd,id,wbuf);
-}
-
-void os_SetWindowText(HWND hwnd,const utf8_t *s)
-{	
-	wchar_t wbuf[STRING_SIZE];
-	
-	string_copy_utf8_string(wbuf,s);
-	
-	SetWindowText(hwnd,wbuf);
-}
-
-void os_SetDlgItemText_localization_id(HWND hwnd,int id,localization_id_t localization_id)
-{	
-	os_SetDlgItemText(hwnd,id,localization_get_string(localization_id));
-}
-
-void os_SetWindowText_localization_id(HWND hwnd,localization_id_t localization_id)
-{	
-	os_SetWindowText(hwnd,localization_get_string(localization_id));
 }
 
 HWND os_CreateWindowEx(DWORD dwExStyle,const utf8_t *lpClassName,const utf8_t *lpWindowName,DWORD dwStyle,int X,int Y,int nWidth,int nHeight,HWND hWndParent,HMENU hMenu,HINSTANCE hInstance,LPVOID lpParam)
@@ -689,8 +724,8 @@ HWND os_CreateWindowEx(DWORD dwExStyle,const utf8_t *lpClassName,const utf8_t *l
 	wchar_t lpClassName_wbuf[STRING_SIZE];
 	wchar_t lpWindowName_wbuf[STRING_SIZE];
 	
-	string_copy_utf8_string(lpClassName_wbuf,lpClassName);
-	string_copy_utf8_string(lpWindowName_wbuf,lpWindowName);
+	string_copy_utf8(lpClassName_wbuf,lpClassName);
+	string_copy_utf8(lpWindowName_wbuf,lpWindowName);
 	
 	return CreateWindowEx(
 		dwExStyle,
@@ -706,7 +741,7 @@ void os_RegisterClassEx(UINT style,WNDPROC lpfnWndProc,HICON hIcon,HCURSOR hCurs
 	WNDCLASSEXW wcex;
 	wchar_t name_wbuf[STRING_SIZE];
 	
-	string_copy_utf8_string(name_wbuf,name);
+	string_copy_utf8(name_wbuf,name);
 
 	// Initialize global strings
 	os_zero_memory(&wcex,sizeof(WNDCLASSEXW));
@@ -796,18 +831,28 @@ void os_init(void)
 
 	// OS Version
 	{
-		OSVERSIONINFOA osvi;
-		
-		osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOA);
-		GetVersionExA(&osvi);
+		HMODULE hNtdll = GetModuleHandleW(L"ntdll.dll");
+		if (hNtdll)
+		{
+			typedef LONG(WINAPI* RtlGetVersion_t)(PRTL_OSVERSIONINFOW);
+			RtlGetVersion_t RtlGetVersion = (RtlGetVersion_t)GetProcAddress(hNtdll, "RtlGetVersion");
+			if (RtlGetVersion)
+			{
+				RTL_OSVERSIONINFOW osvi = { 0 };
+				osvi.dwOSVersionInfoSize = sizeof(RTL_OSVERSIONINFOW);
 
-		os_major_version = (char)osvi.dwMajorVersion;
-		os_minor_version = (char)osvi.dwMinorVersion;
-		os_is_nt = (osvi.dwPlatformId == VER_PLATFORM_WIN32_NT);
+				if (RtlGetVersion(&osvi) == 0)
+				{
+					os_major_version = (char)osvi.dwMajorVersion;
+					os_minor_version = (char)osvi.dwMinorVersion;
+					os_is_nt = (osvi.dwPlatformId == VER_PLATFORM_WIN32_NT);
 
-		debug_printf("os %d\n",os_major_version);
+					debug_printf("os %d\n", os_major_version);
+				}
+			}
+		}
 	}
-	
+
 	// logical width and height.
 	{
 		HDC hdc;
@@ -829,8 +874,7 @@ void os_init(void)
 		_os_SetDefaultDllDirectories = (void *)GetProcAddress(kernel32_hmodule,"SetDefaultDllDirectories");
 		os_GetFileAttributesExW = (void *)GetProcAddress(kernel32_hmodule,"GetFileAttributesExW");
 		_os_IsDebuggerPresent = (void *)GetProcAddress(kernel32_hmodule,"IsDebuggerPresent");
-		os_SetThreadExecutionState = (void *)GetProcAddress(kernel32_hmodule,"SetThreadExecutionState");
-		os_GetUserDefaultUILanguage = (void *)GetProcAddress(kernel32_hmodule,"GetUserDefaultUILanguage");
+		_os_SetThreadExecutionState = (void *)GetProcAddress(kernel32_hmodule,"SetThreadExecutionState");
 	}
 
 	// system dlls only.
@@ -1114,7 +1158,7 @@ int os_shell_execute(HWND hwnd,const wchar_t *filename,int wait,const char *verb
 		
 		if (verb)
 		{
-			string_copy_utf8_string(verb_wbuf,verb);
+			string_copy_utf8(verb_wbuf,verb);
 			pverb = verb_wbuf;
 		}
 		else
@@ -1667,117 +1711,5 @@ void os_adjust_window_rect(HWND hwnd,RECT *window_rect,int window_x,int window_y
 
 //DEBUG:
 //debug_printf((const utf8_t *)"%d %d %d %d\n",window_rect->left,window_rect->top,window_rect->right,window_rect->bottom);
-}
-
-int os_get_text_wideW(HDC hdc,const wchar_t *s,uintptr_t slen_in_wchars)
-{
-	int ret;
-
-	ret = 0;
-	
-	if (slen_in_wchars)
-	{
-		if (slen_in_wchars <= INT_MAX)
-		{
-/*
-			SIZE size;
-			
-			GetTextExtentPoint32W(hdc,s,(int)slen_in_wchars,&size);
-			
-			ret = size.cx;
-*/			
-			
-			RECT rect;
-			
-			rect.left = 0;
-			rect.right = 0;
-			rect.top = 0;
-			rect.bottom = 0;
-			
-			if (slen_in_wchars > _OS_DRAWTEXT_MAX_LEN)
-			{
-				slen_in_wchars = _OS_DRAWTEXT_MAX_LEN;
-			}
-
-			// DrawText performance is about the same as GetTextExtentPoint32W.
-			// DrawText works with unicode characters that map to non-printable ascii chars. (eg: music note)
-			// GetTextExtentPoint32W does not work for some unicode chars (eg: music note)
-			
-			if (DrawText(hdc,s,(int)slen_in_wchars,&rect,DT_NOCLIP| DT_CALCRECT))
-			{
-				ret = rect.right - rect.left;
-			}
-		}
-	}
-	
-	return ret;
-}
-
-int os_get_static_wide(HWND hwnd,int id)
-{
-	HWND dialog_item_hwnd;
-	HDC hdc;
-	int wide;
-	
-	dialog_item_hwnd = GetDlgItem(hwnd,id);
-	wide = 0;
-
-	// get the text width
-	hdc = GetDC(dialog_item_hwnd);
-	if (hdc)
-	{
-		HFONT hfont;
-		HGDIOBJ lastfont;
-		wchar_t wbuf[STRING_SIZE];
-
-		hfont = GetWindowFont(dialog_item_hwnd);
-		lastfont = SelectObject(hdc,hfont);
-
-		GetWindowText(dialog_item_hwnd,wbuf,STRING_SIZE);
-
-		wide = os_get_text_wideW(hdc,wbuf,string_get_length(wbuf));
-		
-		SelectObject(hdc,lastfont);
-		
-		ReleaseDC(hwnd,hdc);
-	}
-	
-	return wide;
-}
-
-int os_expand_static_wide(HWND hwnd,int id,int static_wide)
-{
-	int wide;
-	
-	wide = os_get_static_wide(hwnd,id);
-	
-	if (wide > static_wide)
-	{
-		return wide;
-	}
-	
-	return static_wide;
-}
-
-
-void os_set_window_rect(HWND hwnd,int x,int y,int wide,int high)
-{
-	SetWindowPos(hwnd,0,x,y,wide,high,SWP_NOZORDER|SWP_NOOWNERZORDER|SWP_NOACTIVATE);
-}
-
-void os_set_dialog_item_x_wide(HWND hwnd,int id,int x,int wide)
-{
-	HWND dialog_item_hwnd;
-	RECT rect;
-	POINT pt;
-	
-	dialog_item_hwnd = GetDlgItem(hwnd,id);
-
-	GetWindowRect(dialog_item_hwnd,&rect);
-	pt.x = rect.left;
-	pt.y = rect.top;
-	ScreenToClient(hwnd,&pt);
-	
-	os_set_window_rect(dialog_item_hwnd,x,pt.y,wide,rect.bottom-rect.top);
 }
 

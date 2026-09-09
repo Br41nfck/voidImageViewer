@@ -20,7 +20,7 @@
 // SOFTWARE.
 //
 // load and sort ini files
-
+#pragma once
 #ifdef __cplusplus
 extern "C" {
 #endif

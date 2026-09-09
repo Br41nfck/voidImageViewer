@@ -22,6 +22,12 @@
 // load and sort ini files
 
 #include "viv.h"
+#include "ini.h"
+#include "mem.h"
+#include "os.h"
+#include "utf8.h"
+#include <stdarg.h>
+#include <Windows.h>
 
 // types
 // an ini key to load.

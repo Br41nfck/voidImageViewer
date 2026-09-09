@@ -1,51 +1,6 @@
-;
-; Copyright 2025 voidtools / David Carpenter
-; 
-; Multi-language and multi-VS version support added by hesphoros (2026)
-; 
-; Permission is hereby granted, free of charge, to any person obtaining a copy
-; of this software and associated documentation files (the "Software"), to deal
-; in the Software without restriction, including without limitation the rights
-; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-; copies of the Software, and to permit persons to whom the Software is
-; furnished to do so, subject to the following conditions:
-; 
-; The above copyright notice and this permission notice shall be included in all
-; copies or substantial portions of the Software.
-; 
-; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-; SOFTWARE.
-;
 
 ; defines
 !verbose 3
-
-; Visual Studio version configuration
-; Can be overridden via command line: makensis.exe /DVS_VERSION=vs2026 installer.nsi
-; Supported versions: vs2005, vs2019, vs2026, etc.
-; Added by hesphoros (2026)
-!ifndef VS_VERSION
-	!define VS_VERSION "vs2026"  ; Default VS version
-!endif
-
-; Build configuration (Release, Debug, etc.)
-; Added by hesphoros (2026)
-!ifndef BUILD_CONFIG
-	!define BUILD_CONFIG "Release"  ; Default build configuration
-!endif
-
-; Language configuration
-; Can be overridden via command line: makensis.exe /DLANG=Chinese installer.nsi
-; Supported languages: English, Chinese
-; Added by hesphoros (2026)
-!ifndef LANG
-	!define LANG "Chinese"  ; Default language
-!endif
 
 ; we need admin access to write to program files and registry (associations).
 RequestExecutionLevel user
@@ -61,21 +16,6 @@ XPStyle on
 !include WinMessages.nsh
 !include InstallOptions.nsh
 !include FileFunc.nsh
-
-; Language-specific file names
-!if "${LANG}" == "Chinese"
-	!define LICENSE_FILE "installer_license_Chinese.txt"
-	!define INSTALL_OPTIONS_FILE "InstallOptions_Chinese.ini"
-	!define INSTALL_OPTIONS2_FILE "InstallOptions2_Chinese.ini"
-	!define LANG_CODE "zh-CN"
-	!define LANG_NAME "Chinese"
-!else
-	!define LICENSE_FILE "installer_license_English.txt"
-	!define INSTALL_OPTIONS_FILE "InstallOptions.ini"
-	!define INSTALL_OPTIONS2_FILE "InstallOptions2.ini"
-	!define LANG_CODE "en-US"
-	!define LANG_NAME "English"
-!endif
 
 !ifdef x64
 	
@@ -101,13 +41,13 @@ BrandingText "void Image Viewer ${VERSION}${BETAVERSION} (${TARGETMACHINE}) Setu
 SetCompressor /SOLID lzma
 Name "void Image Viewer"
 
-; Output file name with language code
-OutFile "voidImageViewer-${VERSION}${BETAVERSION}.${TARGETMACHINE}.${LANG_CODE}-Setup.exe"
+; DO NOT LOCALIZE:
+OutFile "voidImageViewer-${VERSION}${BETAVERSION}.${TARGETMACHINE}.en-US-Setup.exe"
 	
 ; MUI settings
 !define MUI_ICON "..\res\voidImageViewer.ico"
 
-!insertmacro MUI_PAGE_LICENSE "${LICENSE_FILE}"
+!insertmacro MUI_PAGE_LICENSE "installer_license_English.txt"
 
 !insertmacro MUI_PAGE_DIRECTORY
 
@@ -124,12 +64,7 @@ Page custom InstallOptions2
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_UNPAGE_FINISH
 
-; Language selection
-!if "${LANG}" == "Chinese"
-	!insertmacro MUI_LANGUAGE "SimpChinese"
-!else
-	!insertmacro MUI_LANGUAGE "English"
-!endif
+!insertmacro MUI_LANGUAGE "English"
 
 !insertmacro GetOptions
 
@@ -144,14 +79,14 @@ VIAddVersionKey "LegalTrademarks" ""
 VIAddVersionKey "LegalCopyright" "Copyright (c) 2025 David Carpenter"
 VIAddVersionKey "FileDescription" "void Image Viewer Setup"
 
-VIAddVersionKey "FileVersion" "${VERSION}${BETAVERSION}.${TARGETMACHINE}.${LANG_CODE}"
-VIAddVersionKey "ProductVersion" "${VERSION}${BETAVERSION}.${TARGETMACHINE}.${LANG_CODE}"
+VIAddVersionKey "FileVersion" "${VERSION}${BETAVERSION}.${TARGETMACHINE}.en-US"
+VIAddVersionKey "ProductVersion" "${VERSION}${BETAVERSION}.${TARGETMACHINE}.en-US"
 
 Function .onInit
 
-	; init options with language-specific files.
-	!insertmacro INSTALLOPTIONS_EXTRACT "${INSTALL_OPTIONS_FILE}"
-	!insertmacro INSTALLOPTIONS_EXTRACT "${INSTALL_OPTIONS2_FILE}"
+	; init options.
+	!insertmacro INSTALLOPTIONS_EXTRACT "InstallOptions.ini"
+	!insertmacro INSTALLOPTIONS_EXTRACT "InstallOptions2.ini"
 
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	; remember last install dir.
@@ -190,8 +125,8 @@ no_existing_install_dir:
 	ReadINIStr $0 "$INSTDIR\voidImageViewer.ini" "voidImageViewer" "appdata"
     StrCmp $0 "0" 0 skip_check_app_data
 	StrCpy $existing_ini_filename "$INSTDIR\voidImageViewer.ini"
-	!insertmacro MUI_INSTALLOPTIONS_WRITE "${INSTALL_OPTIONS_FILE}" "Field 2" "State" "0"
-	!insertmacro MUI_INSTALLOPTIONS_WRITE "${INSTALL_OPTIONS_FILE}" "Field 3" "State" "1"
+	!insertmacro MUI_INSTALLOPTIONS_WRITE "InstallOptions.ini" "Field 2" "State" "0"
+	!insertmacro MUI_INSTALLOPTIONS_WRITE "InstallOptions.ini" "Field 3" "State" "1"
 
 skip_check_app_data:
 
@@ -241,7 +176,7 @@ Section "voidImageViewer" SECTION_VOIDIMAGEVIEWER
 	StrCpy $user_install_options ""
 
 	; app data
-	!insertmacro MUI_INSTALLOPTIONS_READ $R0 "${INSTALL_OPTIONS_FILE}" "Field 2" "State"
+	!insertmacro MUI_INSTALLOPTIONS_READ $R0 "InstallOptions.ini" "Field 2" "State"
 	strcmp $R0 "0" no_app_data
 	StrCpy $admin_install_options "$admin_install_options /appdata"
 	Goto skip_app_data
@@ -254,7 +189,7 @@ no_app_data:
 skip_app_data:	
 
 	; startmenu
-	!insertmacro MUI_INSTALLOPTIONS_READ $R0 "${INSTALL_OPTIONS2_FILE}" "Field 1" "State"
+	!insertmacro MUI_INSTALLOPTIONS_READ $R0 "InstallOptions2.ini" "Field 1" "State"
 	strcmp $R0 "0" no_startmenu
 	StrCpy $admin_install_options "$admin_install_options /startmenu"
 	Goto skip_startmenu
@@ -266,7 +201,7 @@ no_startmenu:
 skip_startmenu:
 
 	; BMP Associations
-	!insertmacro MUI_INSTALLOPTIONS_READ $R0 "${INSTALL_OPTIONS2_FILE}" "Field 3" "State"
+	!insertmacro MUI_INSTALLOPTIONS_READ $R0 "InstallOptions2.ini" "Field 3" "State"
 	strcmp $R0 "0" no_bmp_association
 	StrCpy $user_install_options "$user_install_options /bmp"
 	Goto skip_bmp_association
@@ -278,7 +213,7 @@ no_bmp_association:
 skip_bmp_association:
 
 	; GIF Associations
-	!insertmacro MUI_INSTALLOPTIONS_READ $R0 "${INSTALL_OPTIONS2_FILE}" "Field 4" "State"
+	!insertmacro MUI_INSTALLOPTIONS_READ $R0 "InstallOptions2.ini" "Field 4" "State"
 	strcmp $R0 "0" no_gif_association
 	StrCpy $user_install_options "$user_install_options /gif"
 	Goto skip_gif_association
@@ -383,15 +318,14 @@ skip_webp_association:
 	SetOutPath "$pluginsdir\voidImageViewer"
 
 	; write out files to copy.
-	; VS version and build config are configurable via defines
 
 	!ifdef x64
 	
-		File "..\${VS_VERSION}\x64\${BUILD_CONFIG}\voidImageViewer.exe"
+		File "..\vs2005\x64\release\voidImageViewer.exe"
 		
 	!else
 	
-		File "..\${VS_VERSION}\${BUILD_CONFIG}\voidImageViewer.exe"
+		File "..\vs2005\release\voidImageViewer.exe"
 		
 	!endif
 
@@ -451,7 +385,7 @@ SectionEnd
 
 Function InstallOptions
 
-	!insertmacro INSTALLOPTIONS_INITDIALOG "${INSTALL_OPTIONS_FILE}"
+	!insertmacro INSTALLOPTIONS_INITDIALOG "InstallOptions.ini"
 
 	!insertmacro MUI_HEADER_TEXT "Select Install Options" "Choose any additional install options."
 	
@@ -461,7 +395,7 @@ FunctionEnd
 
 Function InstallOptions2
 	
-	!insertmacro INSTALLOPTIONS_INITDIALOG "${INSTALL_OPTIONS2_FILE}"
+	!insertmacro INSTALLOPTIONS_INITDIALOG "InstallOptions2.ini"
 
 	!insertmacro MUI_HEADER_TEXT "Select Install Options" "Choose any additional install options."
 	

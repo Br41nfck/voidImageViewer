@@ -1,0 +1,32 @@
+# Visual Studio
+.vs/
+**/.vs/
+
+# Build directories
+**/x64/
+**/x86/
+**/Debug/
+**/Release/
+
+# VS generated
+*.suo
+*.user
+*.VC.db
+*.VC.opendb
+*.VC.db-shm
+*.VC.db-wal
+*.ipch
+*.tlog
+*.pdb
+*.ilk
+*.obj
+*.recipe
+*.lastbuildstate
+
+# Visual Studio Versions
+vs2005/
+vs2019/
+vs2026/
+
+# Logs
+*.log

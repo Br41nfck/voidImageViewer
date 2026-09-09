@@ -176,7 +176,10 @@ int webp_load(IStream *stream,void *user_data,int (*info_callback)(void *user_da
 	return ret;
 }
 
-void __cdecl _wassert(const wchar_t * _Message, const wchar_t *_File, unsigned _Line)
+void __cdecl _wassert(
+	_In_opt_z_ const wchar_t* _Message,
+	_In_opt_z_ const wchar_t* _File,
+	_In_ unsigned _Line)
 {
-	debug_fatal("%S(%d) : %S",_File,_Line,_Message);
+	debug_fatal("%S(%d) : %S", _File, _Line, _Message);
 }

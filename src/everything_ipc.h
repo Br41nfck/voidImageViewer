@@ -20,7 +20,9 @@
 // SOFTWARE.
 //
 // Everything IPC
+#pragma once
 
+#include <Windows.h>
 #ifndef _EVERYTHING_IPC_H_
 #define _EVERYTHING_IPC_H_
 

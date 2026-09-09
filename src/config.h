@@ -20,14 +20,16 @@
 // SOFTWARE.
 //
 // customizable settings
+#pragma once
 
+#include <Windows.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 enum
 {
-	CONFIG_NAV_SORT_NAME=0,
+	CONFIG_NAV_SORT_NAME,
 	CONFIG_NAV_SORT_SIZE,
 	CONFIG_NAV_SORT_DATE_MODIFIED,
 	CONFIG_NAV_SORT_DATE_CREATED,
@@ -119,7 +121,6 @@ extern BYTE config_auto_zoom;
 extern BYTE config_pixel_info;
 extern BYTE config_orientation;
 extern BYTE config_title_bar_format;
-extern int config_add_command_line_timeout;
 
 #ifdef __cplusplus
 }

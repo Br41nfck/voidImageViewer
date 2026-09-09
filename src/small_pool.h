@@ -22,7 +22,7 @@
 // a temporary allocator for data
 // initial chunk is stored on the stack.
 // aka a bump allocator
-
+#pragma once
 #ifdef __cplusplus
 extern "C" {
 #endif

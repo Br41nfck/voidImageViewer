@@ -2,6 +2,7 @@
 // Microsoft Visual C++ generated include file.
 // Used by voidImageViewer.rc
 //
+#pragma once
 #define IDD_FORMVIEW                    101
 #define IDD_FORMVIEW1                   101
 #define IDD_GENERAL                     101
@@ -87,9 +88,6 @@
 #define IDC_CACHE_LAST_IMAGE            1049
 #define IDC_AUTO_ZOOM                   1050
 #define IDC_COMBO4                      1051
-#define IDC_TITLE_BAR_FORMAT            1052
-#define IDC_SHRINK_BLIT_MODE_STATIC		1053
-#define IDC_MAGNIFY_BLIT_MODE_STATIC		1054
 
 // Next default values for new objects
 // 
@@ -98,7 +96,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        130
 #define _APS_NEXT_COMMAND_VALUE         40048
-#define _APS_NEXT_CONTROL_VALUE         1055
+#define _APS_NEXT_CONTROL_VALUE         1052
 #define _APS_NEXT_SYMED_VALUE           109
 #endif
 #endif

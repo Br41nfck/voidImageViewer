@@ -20,12 +20,12 @@
 // SOFTWARE.
 //
 // webp layer
-
+#pragma once
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int webp_load(IStream *stream,void *user_data,int (*info_callback)(void *user_data,DWORD frame_count,DWORD wide,DWORD high,int has_alpha),int (*frame_callback)(void *user_data,BYTE *pixels,int timestamp));
+//int webp_load(IStream *stream,void *user_data,int (*info_callback)(void *user_data,DWORD frame_count,DWORD wide,DWORD high,int has_alpha),int (*frame_callback)(void *user_data,BYTE *pixels,int timestamp));
 
 #ifdef __cplusplus
 }

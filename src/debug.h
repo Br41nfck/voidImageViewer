@@ -21,10 +21,11 @@
 //
 // debugging functions
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+#pragma once
 void DECLSPEC_NORETURN debug_fatal(const char *format,...);
 
 #ifdef _DEBUG

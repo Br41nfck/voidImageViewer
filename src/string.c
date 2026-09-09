@@ -23,9 +23,7 @@
 
 #include "viv.h"
 
-static const utf8_t *_string_get_utf8_char(const utf8_t *s,int *pch);
-
-uintptr_t string_get_length(const wchar_t *text)
+uintptr_t string_length(const wchar_t *text)
 {
 	const wchar_t *p;
 	
@@ -44,7 +42,7 @@ wchar_t *string_alloc(const wchar_t *s)
 	uintptr_t wlen;
 	wchar_t *p;
 	
-	wlen = string_get_length(s);
+	wlen = string_length(s);
 	p = (wchar_t *)mem_alloc((wlen + 1) * sizeof(wchar_t));
 	
 	CopyMemory(p,s,(wlen + 1) * sizeof(wchar_t));
@@ -106,9 +104,18 @@ void string_copy_with_bufsize(wchar_t *d,SIZE_T bufsize,const wchar_t *s)
 	*d = 0;
 }
 
-void string_copy_utf8_string(wchar_t *buf,const utf8_t *s)
+void string_copy_utf8(wchar_t *buf,const utf8_t *s)
 {
 	MultiByteToWideChar(CP_UTF8,0,s,-1,buf,STRING_SIZE);
+}
+
+void string_copy_utf8_double_null(wchar_t *buf,const utf8_t *s)
+{
+	int slen;
+	
+	slen = utf8_length_double_null(s);
+	
+	MultiByteToWideChar(CP_UTF8,0,s,slen+1,buf,STRING_SIZE);
 }
 
 void string_cat(wchar_t *buf,const wchar_t *s)
@@ -143,7 +150,7 @@ void string_cat_utf8(wchar_t *buf,const utf8_t *s)
 {
 	wchar_t s_wbuf[STRING_SIZE];
 	
-	string_copy_utf8_string(s_wbuf,s);
+	string_copy_utf8(s_wbuf,s);
 	
 	string_cat(buf,s_wbuf);
 }
@@ -152,7 +159,7 @@ void string_cat_path_separator(wchar_t *buf)
 {
 	uintptr_t len;
 	
-	len = string_get_length(buf);
+	len = string_length(buf);
 	
 	if ((len) && (buf[len-1] == '\\'))
 	{
@@ -335,252 +342,172 @@ void string_vprintf(wchar_t *wbuf,const char *format,va_list argptr)
 
 				case 'd':
 				case 'u':
+				{
+					int num;
+					wchar_t numbuf[64];
+					wchar_t *s;
+
+					num = va_arg(argptr,int);
+
+					string_format_number(numbuf,num);
+					
+					s = numbuf;
+					
+					while(*s)
 					{
-						int num;
-						wchar_t numbuf[64];
-						const wchar_t *s;
-
-						num = va_arg(argptr,int);
-
-						string_format_number(numbuf,num);
-						
-						s = numbuf;
-						
-						while(*s)
+						if (d < e)
 						{
-							if (d < e)
-							{
-								*d++ = *s;
-							}
-							
-							s++;
+							*d++ = *s;
 						}
+						
+						s++;
 					}
+					
 					break;
+				}
 			
-				case 'c':
-					{
-						int ch;
-
-						// ASCII ch
-						ch = va_arg(argptr,int);
-
-						if (d < e)
-						{
-							*d++ = ch;
-						}
-					}
-					break;
-								
-				case 'C':
-					{
-						int ch;
-
-						// wchar
-						ch = va_arg(argptr,int);
-
-						if (d < e)
-						{
-							*d++ = ch;
-						}
-					}
-					break;
-								
 				case 'p':
+				{
+					uintptr_t num;
+					wchar_t numbuf[64];
+					wchar_t *s;
+
+					num = va_arg(argptr,uintptr_t);
+
+					string_format_number(numbuf,num);
+					
+					s = numbuf;
+					
+					while(*s)
 					{
-						uintptr_t num;
-						wchar_t numbuf[64];
-						const wchar_t *s;
-
-						num = va_arg(argptr,uintptr_t);
-
-						string_format_number(numbuf,num);
-						
-						s = numbuf;
-						
-						while(*s)
+						if (d < e)
 						{
-							if (d < e)
-							{
-								*d++ = *s;
-							}
-							
-							s++;
+							*d++ = *s;
 						}
+						
+						s++;
 					}
+					
 					break;
+				}
 
 				case 'f':
+				{
+					int num;
+					wchar_t numbuf[64];
+					wchar_t *s;
+					uintptr_t lz;
+
+					num = (int)(va_arg(argptr,double) * 1000.0f);
+					
+					if (num < 0)
 					{
-						int num;
-						wchar_t numbuf[64];
-						const wchar_t *s;
-						uintptr_t lz;
-
-						num = (int)(va_arg(argptr,double) * 1000.0f);
-						
-						if (num < 0)
-						{
-							if (d < e)
-							{
-								*d++ = '-';
-							}
-							
-							num = -num;
-						}
-
-						string_format_number(numbuf,num / 1000);
-						
-						s = numbuf;
-						
-						while(*s)
-						{
-							if (d < e)
-							{
-								*d++ = *s;
-							}
-							
-							s++;
-						}
-
 						if (d < e)
 						{
-							*d++ = '.';
+							*d++ = '-';
 						}
-
-						string_format_number(numbuf,num % 1000);
 						
-						if (string_get_length(numbuf) <= 3)
+						num = -num;
+					}
+
+					string_format_number(numbuf,num / 1000);
+					
+					s = numbuf;
+					
+					while(*s)
+					{
+						if (d < e)
 						{
-							for(lz=0;lz<3-string_get_length(numbuf);lz++)
-							{
-								if (d < e)
-								{
-									*d++ = '0';
-								}
-							}
+							*d++ = *s;
 						}
-
-						s = numbuf;
 						
-						while(*s)
+						s++;
+					}
+
+					if (d < e)
+					{
+						*d++ = '.';
+					}
+
+					string_format_number(numbuf,num % 1000);
+					
+					if (string_length(numbuf) <= 3)
+					{
+						for(lz=0;lz<3-string_length(numbuf);lz++)
 						{
 							if (d < e)
 							{
-								*d++ = *s;
+								*d++ = '0';
 							}
-							
-							s++;
 						}
 					}
+
+					s = numbuf;
+					
+					while(*s)
+					{
+						if (d < e)
+						{
+							*d++ = *s;
+						}
+						
+						s++;
+					}
+
 					break;
+				}
 
 				case 's':
+				{
+					char *s;
+					
+					s = va_arg(argptr,char *);
+					
+					while(*s)
 					{
-						const utf8_t *utf8_string;
-						wchar_t converted_s[STRING_SIZE];
-						wchar_t *s;
-						
-						utf8_string = va_arg(argptr,const utf8_t *);
-						
-						string_copy_utf8_string(converted_s,utf8_string);
-						s = converted_s;
-						
-						while(*s)
+						if (d < e)
 						{
-							if (d < e)
-							{
-								*d++ = *s;
-							}
-							
-							s++;
+							*d++ = *s;
 						}
+						
+						s++;
 					}
+					
 					break;
+				}
 
 				case 'S':
+				{
+					wchar_t *s;
+					
+					s = va_arg(argptr,wchar_t *);
+					
+					while(*s)
 					{
-						const wchar_t *s;
-						
-						s = va_arg(argptr,const wchar_t *);
-						
-						while(*s)
+						if (d < e)
 						{
-							if (d < e)
-							{
-								*d++ = *s;
-							}
-							
-							s++;
+							*d++ = *s;
 						}
+						
+						s++;
 					}
+					
 					break;
+				}
 			}
-
-			fp++;
 		}
 		else
 		{
-			int ch;
-			
-			fp = _string_get_utf8_char(fp,&ch);
-			
 			if (d < e)
 			{
-				*d++ = ch;
+				*d++ = *fp;
 			}
 		}
+		
+		fp++;
 	}
 	
 	*d = 0;
-}
-
-// read a single character from a utf8 stream.
-// returns the next character in the utf8 stream.
-// sets pch to the read character.
-static const utf8_t *_string_get_utf8_char(const utf8_t *s,int *pch)
-{
-	const utf8_t *p;
-	
-	p = s;
-	
-	if (*p & 0x80)
-	{
-		if (((*p & 0xE0) == 0xC0) && (p[1]))
-		{
-			*pch = ((*p & 0x1f) << 6) | (p[1] & 0x3f);
-
-			p += 2;
-		}
-		else
-		if (((*p & 0xF0) == 0xE0) && (p[1]) && (p[2]))
-		{
-			*pch = ((*p & 0x0f) << 12) | ((p[1] & 0x3f) << 6) | (p[2] & 0x3f);
-
-			p += 3;
-		}
-		else
-		if (((p[0] & 0xF8) == 0xF0)&& (p[1]) && (p[2]) && (p[3]))
-		{
-			*pch = ((*p & 0x07) << 18) | ((p[1] & 0x3f) << 12) | ((p[2] & 0x3f) << 6) | (p[3] & 0x3f);
-
-			p += 4;
-		}
-		else
-		{
-			*pch = 0xffff;
-
-			p++;
-		}
-	}
-	else
-	{
-		*pch = *p;
-		
-		p++;
-	}
-	
-	return p;
 }
 
 void string_printf(wchar_t *wbuf,const char *format,...)
@@ -679,7 +606,7 @@ void string_path_combine_utf8(wchar_t *wbuf,const wchar_t *path,const utf8_t *fi
 {
 	wchar_t subpath[STRING_SIZE];
 	
-	string_copy_utf8_string(subpath,filename);
+	string_copy_utf8(subpath,filename);
 	
 	string_path_combine(wbuf,path,subpath);
 }

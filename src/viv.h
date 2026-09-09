@@ -20,7 +20,7 @@
 // SOFTWARE.
 //
 // VoidImageViewer
-
+#pragma once
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -226,7 +226,6 @@ enum
 #include "version.h"
 #include "debug.h"
 #include "mem.h"
-#include "localization.h"
 #include "os.h"
 #include "wchar.h"
 #include "string.h"
@@ -236,6 +235,7 @@ enum
 #include "webp.h"
 #include "small_pool.h"
 #include "safe_size.h"
+
 #include "everything_ipc.h"
 
 int viv_get_command_count(void);

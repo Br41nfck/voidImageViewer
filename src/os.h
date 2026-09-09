@@ -20,7 +20,7 @@
 // SOFTWARE.
 //
 // Operating System calls
-
+#pragma once
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -52,11 +52,7 @@ void os_MonitorRectFromWindow(HWND hwnd,int is_fullscreen,RECT *out_monitor_rect
 void os_MonitorRectFromRect(RECT *window_rect,int is_fullscreen,RECT *out_monitor_rect);
 void os_MonitorRectFromCursor(int is_fullscreen,RECT *out_monitor_rect);
 int os_ComboBox_AddString(HWND hwnd,int id,const utf8_t *s);
-int os_ComboBox_AddString_localization_id(HWND hwnd,int id,localization_id_t localization_id);
 void os_SetDlgItemText(HWND hwnd,int id,const utf8_t *s);
-void os_SetDlgItemText_localization_id(HWND hwnd,int id,localization_id_t localization_id);
-void os_SetWindowText(HWND hwnd,const utf8_t *s);
-void os_SetWindowText_localization_id(HWND hwnd,localization_id_t localization_id);
 HWND os_CreateWindowEx(DWORD dwExStyle,const utf8_t *lpClassName,const utf8_t *lpWindowName,DWORD dwStyle,int X,int Y,int nWidth,int nHeight,HWND hWndParent,HMENU hMenu,HINSTANCE hInstance,LPVOID lpParam);
 void os_RegisterClassEx(UINT style,WNDPROC lpfnWndProc,HICON hIcon,HCURSOR hCursor,HBRUSH hbrBackground,const utf8_t *name,HICON hIconSm);
 int os_is_admin(void);
@@ -73,7 +69,7 @@ int os_shell_execute(HWND hwnd,const wchar_t *filename,int wait,const char *verb
 int os_browse_for_folder(HWND parent,wchar_t *filename);
 VIV_UINT64 os_get_tick_count(void);
 VIV_UINT64 os_get_tick_freq(void);
-void os_get_monitor_rect_from_window(HWND hwnd,RECT *monitor_rect,int fullscreen);
+//void os_get_monitor_rect_from_window(HWND hwnd,RECT *monitor_rect,int fullscreen);
 WNDPROC os_set_window_proc(HWND hwnd,WNDPROC proc);
 int os_statusbar_index_from_x(HWND statusbar_hwnd,int x);
 int os_is_windows_7_or_later(void);
@@ -88,10 +84,6 @@ int os_get_orientation(const wchar_t *filename);
 void os_adjust_window_rect(HWND hwnd,RECT *window_rect,int window_x,int window_y,int client_wide,int client_high);
 DWORD os_get_window_style(HWND hwnd);
 DWORD os_get_window_ex_style(HWND hwnd);
-int os_get_static_wide(HWND hwnd,int id);
-int os_expand_static_wide(HWND hwnd,int id,int static_wide);
-void os_set_window_rect(HWND hwnd,int x,int y,int wide,int high);
-void os_set_dialog_item_x_wide(HWND hwnd,int id,int x,int wide);
 
 extern HINSTANCE os_hinstance;
 extern DWORD os_major_version;
@@ -127,8 +119,7 @@ extern BOOL (STDAPICALLTYPE *os_IsUserAnAdmin)(void);
 extern HRESULT (__stdcall *os_EnableThemeDialogTexture)(HWND hwnd, DWORD dwFlags);
 extern BOOL (WINAPI *os_ChangeWindowMessageFilterEx)(HWND hWnd,UINT message,DWORD action,void *pChangeFilterStruct);
 extern DWORD (WINAPI *os_GetLayout)(HDC hdc);
-extern EXECUTION_STATE (WINAPI *os_SetThreadExecutionState)(  EXECUTION_STATE esFlags);
-extern LANGID (WINAPI *os_GetUserDefaultUILanguage)(void);
+extern EXECUTION_STATE (WINAPI *_os_SetThreadExecutionState)(  EXECUTION_STATE esFlags);
 extern int os_logical_wide;
 extern int os_logical_high;
 

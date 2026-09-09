@@ -1,3 +1,4 @@
+#pragma once
 #define VERSION_YEAR		2026
 #define VERSION_MAJOR		1
 #define VERSION_MINOR		0
