@@ -1,0 +1,67 @@
+# TODO
+- [ ] Add UI option for config_title_bar_format.
+- [ ] Compile on mingw
+- [ ] Review jump-to focus
+- [ ] Option to show full path like MPC
+- [ ] Undo option, after delete, undo the delete and re-add the image to the playlist.
+- [ ] Delete crashes on win9x, might indicate a deeper issue..
+- [ ] Fix horrible screen buffer mangling by Windows when resizing the window or auto fitting the window.
+- [ ] Msi installer
+- [ ] ARM/ARM64 installer
+- [ ] Install for current user only option, install to %LocalAppData%\Programs
+- [ ] Dark mode (nothing in viv has Microsoft dark theme support -I will have to render ALL controls myself)
+- [ ] Use Direct3D to render images when shrinking.
+- [ ] Use sort order from Windows Explorer folder.
+- [ ] Copy the zoomed part of the image to another buffer and stretch that to avoid gdi driver issues when zooming in really close with large images.
+- [ ] Get image width/length via IPC
+- [ ] Get/set viv display area width/length via IPC
+- [ ] Support piping of image data for ImageMagic support
+- [ ] Set/get zoom level 
+- [ ] Change zoom in/out level in 1/10/100 percent steps
+- [ ] Auto zoom levels: always fit to width, always fit to height, zoom inside (fit to width or height so that still the whole image is shown), zoom outside (fit to width or height so that the window is fully filled)
+- [ ] Option to keep the custom zoom level while image displayed changed
+- [ ] By holding left mouse button on displayed image and moving the mouse, move viv window when using "zoom inside" mode, else move image inside viv window
+- [ ] Keyboard shortcut Ctrl+C to copy viv display area to clipboard and Ctrl+V to paste the image from clipboard and display it.
+- [ ] I use ImageMagick's convert.exe and GraphicsMagick's gm.exe tools for color correction an image sharpening. I need to pipe out the image showing in viv to those apps and pipe in the output of those apps to viv and display the processed image without writing to disk, i.e. viv write to STOUT and read from STDIN.
+- [ ] May be there could be an option in viv that the user just provide the executable names and the command line parameters that optionally would be executed whenever the file displayed changes. - some sort of multiple instances setting, eg: viv.exe -no-new-instance -other command line arguments... -could also support named instances
+- [ ] Set/get file name of displayed image. Considering when clipboard/STDIN is displayed, it would be nice to still be able to get the name of the file that was displayed before showing the clipboard/STDIN.
+- [ ] Auto update the image displayed when the image on disk (or the clipboard) has changed
+- [ ] Next/previous image with option to show files in subfolders. Considering when clipboard/STDIN is displayed, the base image would be the file that was displayed before showing the clipboard/STDIN.
+- [ ] Border less window with retractable title bar
+- [ ] Dark skin (use system theme)
+- [ ] Snap viv window to other windows and the monitor borders
+- [ ] No minimum viv window size restriction
+- [ ] Open/edit image with another app
+- [ ] Color correction, white balance, sharpening
+- [ ] == mehdi
+- [ ] Create a playlist file format (aka an album of images)
+- [ ] Ken Burns Effect Slideshows with FFMPeg -stamimail -https://el-tramo.be/blog/ken-burns-ffmpeg/
+- [ ] Open a file with the filename clipboard: to open the clipboard
+- [ ] Open a file with the filename stdin: to open stdin
+- [ ] Check we are using ICC
+- [ ] Show main window on monitor that the cursor is currently on, like MPC-HC.
+- [ ] Remove GetFileAttributesEx or replace with GetFileAttributes..
+- [ ] Ctrl + V to paste image from the clipboard into voidImageViewer??
+- [ ] A touch window from inside option
+- [ ] Add support for APNG
+- [ ] A Play All Instances option that plays/pause all instances
+- [ ] Keyboard shortcut to toggle Everything randomize.
+- [ ] Middle mouse action, scroll and control slideshow speed
+- [ ] Make VIV more aware of other VIV windows for improved tile support.. cascade etc..
+- [ ] OpenGL renderer
+- [ ] Direct3D renderer
+- [ ] Graphics::GetHalftonePalette for 256 color mode.
+- [ ] High dpi icons
+- [ ] Control toolbar customization
+- [ ] Install bmp/jpg only if the default value for HKEY_CLASSES_ROOT\.bmp is bmpfile or voidImageViewer.bmpfile -don't replace non default ones. default hard to determine for each version of Windows -avoiding for now.
+- [ ] String table for localization.
+- [ ] Right click -> open with ...open with, or rather get a proper context menu. CDefFolderMenu_Create2
+- [ ] Keep window aspect size option
+- [ ] Generate a shuffle list of indexes for the Everything randomize option.
+- [ ] Image playlists. m3u? efu? -command line option to load a list of filenames from a txt/efu file lists.
+- [ ] Shift + Ctrl + Numpad arrow keys for faster/slower movement
+- [ ] When panning the image, clamp to the image edge, instead of the image center.
+- [ ] Paste dib from clipboard CF_DIB
+- [ ] Therube: Just to note...  Something like: voidImageViewer.exe "\my documents" or voidImageViewer.exe "\my documents\"  , will load "images" found in the \my documents\ directory.  Though somethig like: voidImageViewer.exe "\my documents\*" or voidImageViewer.exe "\my documents\*.*"  will load (I suppose it is) ALL images on your computer. voidImageViewer.exe "\my documents\*.jpg" works as expected. 
+- [ ] Maintain correct image aspect ratio when window is clipped on auto size.
+- [ ] If we have a small image 64x64 and zoom right in, the image still fits inside our window -if we then go fullscreen the image is massive, we should check if Fill Window is triggered and disable the zoom in fullscreen mode.
