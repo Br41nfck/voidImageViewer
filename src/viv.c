@@ -151,6 +151,7 @@
 
 #define _VIV_WM_REPLY							(WM_USER+1)
 #define _VIV_WM_RETRY_RANDOM_EVERYTHING_SEARCH	(WM_USER+2)
+#define VIV_ID_CHECK_MOUSE_TIMER				(WM_USER+3)
 
 #define _VIV_ASSOCIATION_BMP				0x00000001
 #define _VIV_ASSOCIATION_GIF				0x00000002
@@ -3125,7 +3126,35 @@ debug_printf("NEXT AFTER LOAD %S\n",fd->cFileName);
 			break;
 		}
 			
+		if (config_retractable_titlebar) SetTimer(_viv_hwnd, VIV_ID_CHECK_MOUSE_TIMER, 50, NULL);
+
 		case WM_TIMER:
+		{
+			if (wParam == VIV_ID_CHECK_MOUSE_TIMER)
+			{
+				if (config_retractable_titlebar)
+				{
+					POINT pt;
+					RECT rect;
+					GetCursorPos(&pt);
+					GetWindowRect(_viv_hwnd, &rect);
+
+					int is_mouseover = (pt.x >= rect.left && pt.x <= rect.right &&
+						pt.y >= rect.top && pt.y <= rect.bottom);
+
+					if (is_mouseover != _viv_is_mouseover)
+					{
+						_viv_is_mouseover = is_mouseover;
+						_viv_update_titlebar_visibility();
+					}
+					else if (is_mouseover)
+					{
+						_viv_update_titlebar_visibility();
+					}
+				}
+			}
+			break;
+		}
 			
 			switch(wParam)
 			{
@@ -5111,6 +5140,8 @@ static int _viv_init(int nCmdShow)
 	_viv_key_list = mem_alloc(sizeof(_viv_key_list_t));
 	
 	_viv_key_list_init(_viv_key_list);
+
+
 	
 	// setup keys.
 	{
