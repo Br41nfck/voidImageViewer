@@ -788,6 +788,7 @@ static wchar_t *_viv_last_open_file = 0;
 static wchar_t *_viv_last_open_folder = 0;
 static wchar_t *_viv_load_image_filename = 0;
 static VIV_UINT64 _viv_load_start_tick = 0;
+static VIV_UINT64 _viv_load_elapsed = 0;
 static double _viv_load_speed = 0.0;
 static BYTE _viv_load_speed_valid = 0;
 static wchar_t *_viv_clipboard_temp_file = 0;
@@ -3310,11 +3311,25 @@ static LRESULT CALLBACK _viv_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam
 
 								size.HighPart = _viv_load_fd->nFileSizeHigh;
 								size.LowPart = _viv_load_fd->nFileSizeLow;
-								if (elapsed && size.QuadPart)
+
+								_viv_load_elapsed = elapsed;
+
+								if (size.QuadPart > 0)
 								{
-									_viv_load_speed = ((double)size.QuadPart * (double)os_get_tick_freq()) /
-										((double)elapsed * 1024.0 * 1024.0);
+									if (elapsed == 0)
+									{
+										_viv_load_speed = 0.0;
+									}
+									else
+									{
+										_viv_load_speed = ((double)size.QuadPart * 1000.0) /
+											((double)elapsed * 1024.0 * 1024.0);
+									}
 									_viv_load_speed_valid = 1;
+								}
+								else
+								{
+									_viv_load_speed_valid = 0;
 								}
 							}
 
@@ -11645,7 +11660,7 @@ static void _viv_status_update(void)
 {
 	if (_viv_status_hwnd)
 	{
-		int part_array[7];
+		int part_array[9];
 		RECT rect;
 		wchar_t widebuf[STRING_SIZE];
 		wchar_t highbuf[STRING_SIZE];
@@ -11654,6 +11669,7 @@ static void _viv_status_update(void)
 		wchar_t pixel_pos_buf[STRING_SIZE];
 		wchar_t pixel_rgb_buf[STRING_SIZE];
 		wchar_t speed_buf[STRING_SIZE];
+		wchar_t load_time_buf[STRING_SIZE];
 		wchar_t version_buf[64];
 		const wchar_t* preload_buf;
 		HDC hdc;
@@ -11663,20 +11679,30 @@ static void _viv_status_update(void)
 		int pixel_pos_wide;
 		int pixel_rgb_wide;
 		int speed_wide;
+		int load_time_wide;
 		int version_wide;
 		int minwide;
+		int parti;
 
 		GetClientRect(_viv_hwnd, &rect);
 
-		string_printf(version_buf, "Ver: %d.%d.%d Build: %d", VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, VERSION_BUILD);
+		string_printf(version_buf, "Ver: %d.%d.%d Build: %d",
+			VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, VERSION_BUILD);
 
 		preload_buf = 0;
 		*pixel_pos_buf = 0;
 		*pixel_rgb_buf = 0;
 		*speed_buf = 0;
+		*load_time_buf = 0;
+
 		if (_viv_load_speed_valid)
 		{
-			string_printf(speed_buf, "Speed: %.2f MB/s", _viv_load_speed);
+			if (_viv_load_speed > 0.0)
+			{
+				string_printf(speed_buf, "Speed: %.2f MB/s", _viv_load_speed);
+			}
+
+			string_printf(load_time_buf, "Load: %llu ms", _viv_load_elapsed);
 		}
 
 		if ((_viv_image_wide) && (_viv_image_high))
@@ -11754,9 +11780,9 @@ static void _viv_status_update(void)
 			string_copy_utf8(frame_buf, (const utf8_t*)"");
 		}
 
-		// this is just noise..
-
-		if ((_viv_load_is_preload) && (_viv_preload_state == 0) && (!_viv_should_activate_preload_on_load) && (!_viv_load_image_terminate) && (!_viv_preload_frame_loaded_count))
+		if ((_viv_load_is_preload) && (_viv_preload_state == 0) &&
+			(!_viv_should_activate_preload_on_load) && (!_viv_load_image_terminate) &&
+			(!_viv_preload_frame_loaded_count))
 		{
 			preload_buf = L"PRELOAD";
 		}
@@ -11776,6 +11802,7 @@ static void _viv_status_update(void)
 		pixel_pos_wide = 0;
 		pixel_rgb_wide = 0;
 		speed_wide = 0;
+		load_time_wide = 0;
 		version_wide = 0;
 		minwide = (72 * os_logical_wide) / 96;
 
@@ -11799,6 +11826,7 @@ static void _viv_status_update(void)
 					{
 						version_wide = 150;
 					}
+				}
 
 				if (*speed_buf)
 				{
@@ -11807,6 +11835,13 @@ static void _viv_status_update(void)
 						speed_wide = size.cx + GetSystemMetrics(SM_CXEDGE) * 5;
 					}
 				}
+
+				if (*load_time_buf)
+				{
+					if (GetTextExtentPoint32(hdc, load_time_buf, string_length(load_time_buf), &size))
+					{
+						load_time_wide = size.cx + GetSystemMetrics(SM_CXEDGE) * 5;
+					}
 				}
 
 				if (GetTextExtentPoint32(hdc, dimension_buf, string_length(dimension_buf), &size))
@@ -11860,158 +11895,210 @@ static void _viv_status_update(void)
 			ReleaseDC(_viv_status_hwnd, hdc);
 		}
 
-		// add size box
 		dimension_wide += GetSystemMetrics(SM_CXVSCROLL) + GetSystemMetrics(SM_CXBORDER);
 
+		// === Устанавливаем части статусбара ===
 		{
-			int parti = 0;
-			int part_wide = 120;
-			part_array[parti] = part_wide;
-			parti++;
+			int total_wide = rect.right - rect.left;
+			int fixed_wide;
+			int main_wide;
 
-			part_wide = (rect.right - rect.left) - 120 - dimension_wide - frame_wide - preload_wide - pixel_pos_wide - pixel_rgb_wide - speed_wide;
-			if (part_wide < 0) part_wide = 0;
-			part_array[parti] = part_wide;
-			parti++;
+			// Сначала считаем, сколько места занимают все фиксированные части
+			fixed_wide = version_wide + dimension_wide + frame_wide;
+			if (preload_buf) fixed_wide += preload_wide;
+			if (*speed_buf) fixed_wide += speed_wide;
+			if (*load_time_buf) fixed_wide += load_time_wide;
+			if (*pixel_pos_buf) fixed_wide += pixel_pos_wide;
+			if (*pixel_rgb_buf) fixed_wide += pixel_rgb_wide;
 
-			if (preload_buf)
+			// Оставляем хотя бы 40 пикселей под основную часть
+			main_wide = total_wide - fixed_wide;
+			if (main_wide < 40)
 			{
-				part_wide += preload_wide;
+				// Не влезает — отключаем менее важные части по одной
+				main_wide = 40;
+				fixed_wide = total_wide - main_wide;
+
+				// Пробуем убрать части в порядке приоритета (сначала менее важные)
+				if (*pixel_rgb_buf && (fixed_wide > total_wide - main_wide))
+				{
+					fixed_wide -= pixel_rgb_wide;
+					*pixel_rgb_buf = 0;
+					pixel_rgb_wide = 0;
+				}
+				if (*pixel_pos_buf && (fixed_wide > total_wide - main_wide))
+				{
+					fixed_wide -= pixel_pos_wide;
+					*pixel_pos_buf = 0;
+					pixel_pos_wide = 0;
+				}
+				if (preload_buf && (fixed_wide > total_wide - main_wide))
+				{
+					fixed_wide -= preload_wide;
+					preload_buf = 0;
+					preload_wide = 0;
+				}
+				if (*load_time_buf && (fixed_wide > total_wide - main_wide))
+				{
+					fixed_wide -= load_time_wide;
+					*load_time_buf = 0;
+					load_time_wide = 0;
+				}
+				if (*speed_buf && (fixed_wide > total_wide - main_wide))
+				{
+					fixed_wide -= speed_wide;
+					*speed_buf = 0;
+					speed_wide = 0;
+				}
+			}
+
+			parti = 0;
+			{
+				int part_wide = version_wide;
 				part_array[parti] = part_wide;
 				parti++;
-			}
 
-			if (speed_buf)
-			{
-				part_wide += speed_wide;
+				part_wide += main_wide;
 				part_array[parti] = part_wide;
 				parti++;
-			}
 
-			if (pixel_pos_buf)
-			{
-				part_wide += pixel_pos_wide;
+				if (preload_buf)
+				{
+					part_wide += preload_wide;
+					part_array[parti] = part_wide;
+					parti++;
+				}
+
+				if (*speed_buf)
+				{
+					part_wide += speed_wide;
+					part_array[parti] = part_wide;
+					parti++;
+				}
+
+				if (*load_time_buf)
+				{
+					part_wide += load_time_wide;
+					part_array[parti] = part_wide;
+					parti++;
+				}
+
+				if (*pixel_pos_buf)
+				{
+					part_wide += pixel_pos_wide;
+					part_array[parti] = part_wide;
+					parti++;
+				}
+
+				if (*pixel_rgb_buf)
+				{
+					part_wide += pixel_rgb_wide;
+					part_array[parti] = part_wide;
+					parti++;
+				}
+
+				part_wide += frame_wide;
 				part_array[parti] = part_wide;
 				parti++;
-			}
 
-			if (speed_buf)
-			{
-				_viv_status_set(parti, speed_buf);
+				part_array[parti] = -1;
 				parti++;
+
+				SendMessage(_viv_status_hwnd, SB_SETPARTS, parti, (LPARAM)part_array);
 			}
-
-			if (pixel_rgb_buf)
-			{
-				part_wide += pixel_rgb_wide;
-				part_array[parti] = part_wide;
-				parti++;
-			}
-
-			part_wide += frame_wide;
-			part_array[parti] = part_wide;
-			parti++;
-
-			part_array[parti] = -1;
-			parti++;
-
-			SendMessage(_viv_status_hwnd, SB_SETPARTS, parti, (LPARAM)part_array);
 		}
 
-		{
-			wchar_t* text;
+		parti = 0;
 
-			text = L"";
+		_viv_status_set(parti, version_buf);
+		parti++;
+
+		{
+			wchar_t* text = L"";
+			if (_viv_status_temp_text) text = _viv_status_temp_text;
+			else if ((_viv_load_image_thread) && ((!_viv_load_is_preload) || (_viv_should_activate_preload_on_load))) text = L"Loading...";
+			else if (_viv_file_not_found) text = L"File not found.";
+			else if (_viv_load_failed) text = L"Failed to load image.";
+			else if (_viv_is_slideshow) text = L"Slideshow playing";
+			_viv_status_set(parti, text);
+		}
+		parti++;
+
+		if (preload_buf) { _viv_status_set(parti, preload_buf); parti++; }
+		if (*speed_buf) { _viv_status_set(parti, speed_buf); parti++; }
+		if (*load_time_buf) { _viv_status_set(parti, load_time_buf); parti++; }
+		if (*pixel_pos_buf) { _viv_status_set(parti, pixel_pos_buf); parti++; }
+		if (*pixel_rgb_buf) { _viv_status_set(parti, pixel_rgb_buf); parti++; }
+
+		_viv_status_set(parti, frame_buf);
+		parti++;
+
+		_viv_status_set(parti, dimension_buf);
+		parti++;
+
+		{
+			wchar_t* text = L"";
 
 			if (_viv_status_temp_text)
 			{
 				text = _viv_status_temp_text;
 			}
-			else
-				if ((_viv_load_image_thread) && ((!_viv_load_is_preload) || (_viv_should_activate_preload_on_load)))
-				{
-					text = L"Loading...";
-				}
-				else
-					if (_viv_file_not_found)
-					{
-						text = L"File not found.";
-					}
-					else
-						if (_viv_load_failed)
-						{
-							text = L"Failed to load image.";
-						}
-						else
-							if (_viv_is_slideshow)
-							{
-								text = L"Slideshow playing";
-							}
+			else if ((_viv_load_image_thread) && ((!_viv_load_is_preload) || (_viv_should_activate_preload_on_load)))
+			{
+				text = L"Loading...";
+			}
+			else if (_viv_file_not_found)
+			{
+				text = L"File not found.";
+			}
+			else if (_viv_load_failed)
+			{
+				text = L"Failed to load image.";
+			}
+			else if (_viv_is_slideshow)
+			{
+				text = L"Slideshow playing";
+			}
 
-			_viv_status_set(0, text);
+			_viv_status_set(parti, text);
 		}
+		parti++;
 
+		if (preload_buf)
 		{
-			int parti = 0;
-
-			// 1. Первый сегмент - ВЕРСИЯ (всегда слева)
-			_viv_status_set(parti, version_buf);
-			parti++;
-
-			// 2. Второй сегмент - основной текст (статус)
-			{
-				wchar_t* text = L"";
-
-				if (_viv_status_temp_text)
-				{
-					text = _viv_status_temp_text;
-				}
-				else if ((_viv_load_image_thread) && ((!_viv_load_is_preload) || (_viv_should_activate_preload_on_load)))
-				{
-					text = L"Loading...";
-				}
-				else if (_viv_file_not_found)
-				{
-					text = L"File not found.";
-				}
-				else if (_viv_load_failed)
-				{
-					text = L"Failed to load image.";
-				}
-				else if (_viv_is_slideshow)
-				{
-					text = L"Slideshow playing";
-				}
-
-				_viv_status_set(parti, text);
-			}
-			parti++;
-
-			// 3-6. Остальные сегменты
-			if (preload_buf)
-			{
-				_viv_status_set(parti, preload_buf);
-				parti++;
-			}
-
-			if (pixel_pos_buf)
-			{
-				_viv_status_set(parti, pixel_pos_buf);
-				parti++;
-			}
-
-			if (pixel_rgb_buf)
-			{
-				_viv_status_set(parti, pixel_rgb_buf);
-				parti++;
-			}
-
-			_viv_status_set(parti, frame_buf);
-			parti++;
-
-			_viv_status_set(parti, dimension_buf);
+			_viv_status_set(parti, preload_buf);
 			parti++;
 		}
+
+		if (*speed_buf)
+		{
+			_viv_status_set(parti, speed_buf);
+			parti++;
+		}
+
+		if (*load_time_buf)
+		{
+			_viv_status_set(parti, load_time_buf);
+			parti++;
+		}
+
+		if (*pixel_pos_buf)
+		{
+			_viv_status_set(parti, pixel_pos_buf);
+			parti++;
+		}
+
+		if (*pixel_rgb_buf)
+		{
+			_viv_status_set(parti, pixel_rgb_buf);
+			parti++;
+		}
+
+		_viv_status_set(parti, frame_buf);
+		parti++;
+
+		_viv_status_set(parti, dimension_buf);
+		parti++;
 	}
 }
 
