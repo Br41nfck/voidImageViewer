@@ -21,6 +21,7 @@
 - [ ] Fix zoom issue: small image 64x64 → fullscreen should disable zoom
 - [ ] Copy zoomed part to buffer to avoid GDI issues at high zoom
 - [ ] Graphics::GetHalftonePalette for 256 color mode
+- [X] Image border
 
 ## Zoom & Navigation
 - [ ] Set/get zoom level via IPC
@@ -95,4 +96,4 @@
 - [ ] == mehdi
 - [ ] Check ICC usage
 - [ ] Therube note: folder loading behavior with wildcards
-- [ ] Logging to file (config option: console, file, both)
+- [X] Logging to file (config option: console, file, both)

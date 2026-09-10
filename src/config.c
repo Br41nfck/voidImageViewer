@@ -96,6 +96,8 @@ BYTE config_orientation = 1; // Apply the image orientation metadata.
 BYTE config_title_bar_format = 1; // Title format: 0 full path, 1 filename, 2 none.
 BYTE config_retractable_titlebar = 0; // Replace the standard title bar with a retractable one.
 BYTE config_theme = CONFIG_THEME_SYSTEM; // Application theme: 0 system, 1 light, 2 dark.
+BYTE config_image_border_width = 1; // Image border width in pixels; 0 disables the border.
+BYTE config_log_mode = CONFIG_LOG_CONSOLE; // Logging destination: 0 console, 1 file, 2 both.
 
 static void _config_load_settings_by_location(const wchar_t *path,int is_root)
 {
@@ -171,6 +173,16 @@ static void _config_load_settings_by_location(const wchar_t *path,int is_root)
 		if (config_theme > CONFIG_THEME_DARK)
 		{
 			config_theme = CONFIG_THEME_SYSTEM;
+		}
+		config_image_border_width = ini_get_int(ini, (const utf8_t*)"image_border_width", config_image_border_width);
+		if (config_image_border_width > 32)
+		{
+			config_image_border_width = 1;
+		}
+		config_log_mode = ini_get_int(ini, (const utf8_t*)"log_mode", config_log_mode);
+		if (config_log_mode > CONFIG_LOG_BOTH)
+		{
+			config_log_mode = CONFIG_LOG_CONSOLE;
 		}
 
 		if (is_root)
@@ -381,6 +393,8 @@ static void _config_save_settings_by_location(const wchar_t *path, int is_root)
 			_config_write_int(h,"title_bar_format",config_title_bar_format);
 			_config_write_int(h, "retractable_titlebar", config_retractable_titlebar);
 			_config_write_int(h, "theme", config_theme);
+			_config_write_int(h, "image_border_width", config_image_border_width);
+			_config_write_int(h, "log_mode", config_log_mode);
 		
 			// save keys
 			{

@@ -4861,6 +4861,31 @@ debug_printf("PAINT %d %d %d\n",_viv_frame_position,rw,rh);
 						}
 					}
 
+					if ((rw > 0) && (rh > 0) && config_image_border_width)
+					{
+						HBRUSH border_brush;
+						RECT border_rect;
+						BYTE background_r;
+						BYTE background_g;
+						BYTE background_b;
+
+						background_r = _viv_is_fullscreen ? config_fullscreen_background_color_r : config_windowed_background_color_r;
+						background_g = _viv_is_fullscreen ? config_fullscreen_background_color_g : config_windowed_background_color_g;
+						background_b = _viv_is_fullscreen ? config_fullscreen_background_color_b : config_windowed_background_color_b;
+						border_brush = CreateSolidBrush((background_r * 299 + background_g * 587 + background_b * 114) < 128000 ? RGB(255,255,255) : RGB(0,0,0));
+
+						if (border_brush)
+						{
+							SetRect(&border_rect,rx,ry,rx + rw,ry + rh);
+							for (int border = 0; border < config_image_border_width && border_rect.left < border_rect.right && border_rect.top < border_rect.bottom; border++)
+							{
+								FrameRect(ps.hdc,&border_rect,border_brush);
+								InflateRect(&border_rect,-1,-1);
+							}
+							DeleteObject(border_brush);
+						}
+					}
+
 					{
 						HBRUSH hbrush;
 						
@@ -5680,6 +5705,8 @@ static int _viv_init(int nCmdShow)
 
 	// load settings
 	config_load_settings();
+	debug_shutdown();
+	debug_init();
 
 	if (config_retractable_titlebar)
 	{
@@ -6013,6 +6040,7 @@ static void _viv_kill(void)
 
 #ifdef _DEBUG
 	mem_debug();
+	debug_shutdown();
 #endif	
 }
 
@@ -8788,6 +8816,7 @@ static INT_PTR CALLBACK _viv_options_view_proc(HWND hwnd, UINT msg, WPARAM wPara
 		CheckDlgButton(hwnd, IDC_CACHE_LAST_IMAGE, config_cache_last ? BST_CHECKED : BST_UNCHECKED);
 
 		CheckDlgButton(hwnd, IDC_RETRACTABLE_TITLEBAR, config_retractable_titlebar ? BST_CHECKED : BST_UNCHECKED);
+		SetDlgItemInt(hwnd, IDC_IMAGE_BORDER_WIDTH, config_image_border_width, FALSE);
 
 		SetWindowLongPtr(GetDlgItem(hwnd, IDC_WINDOWEDBACKGROUNDCOLOR), GWLP_USERDATA,
 			RGB(config_windowed_background_color_r, config_windowed_background_color_g, config_windowed_background_color_b));
@@ -9189,10 +9218,19 @@ static INT_PTR CALLBACK _viv_options_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARA
 
 						config_auto_zoom = IsDlgButtonChecked(view_page,IDC_AUTO_ZOOM) == BST_CHECKED ? 1 : 0;
 						config_auto_zoom_type = ComboBox_GetCurSel(GetDlgItem(view_page,IDC_COMBO4));
+						{
+							UINT image_border_width = GetDlgItemInt(view_page, IDC_IMAGE_BORDER_WIDTH, NULL, FALSE);
+							if (image_border_width > 32)
+							{
+								image_border_width = 32;
+							}
+							config_image_border_width = (BYTE)image_border_width;
+						}
 						config_loop_animations_once = IsDlgButtonChecked(view_page,IDC_LOOP_ANIMATIONS_ONCE) == BST_CHECKED ? 1 : 0;
 						config_preload_next = IsDlgButtonChecked(view_page,IDC_PRELOAD_NEXT_IMAGE) == BST_CHECKED ? 1 : 0;
 						config_cache_last = IsDlgButtonChecked(view_page,IDC_CACHE_LAST_IMAGE) == BST_CHECKED ? 1 : 0;
 						config_retractable_titlebar = IsDlgButtonChecked(view_page, IDC_RETRACTABLE_TITLEBAR) == BST_CHECKED;
+						InvalidateRect(_viv_hwnd, 0, FALSE);
 
 						debug_printf("config_retractable_titlebar = %d\n", config_retractable_titlebar);
 

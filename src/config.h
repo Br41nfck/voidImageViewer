@@ -61,6 +61,10 @@ typedef struct config_key_s
 #define CONFIG_THEME_LIGHT						1
 #define CONFIG_THEME_DARK						2
 
+#define CONFIG_LOG_CONSOLE						0
+#define CONFIG_LOG_FILE						1
+#define CONFIG_LOG_BOTH						2
+
 void config_load_settings(void);
 void config_save_settings(int appdata);
 void config_apply_settings(void);
@@ -128,6 +132,8 @@ extern BYTE config_orientation;
 extern BYTE config_title_bar_format;
 extern BYTE config_retractable_titlebar; // 0 - disabled, 1 - enabled
 extern BYTE config_theme; // 0 = system, 1 = light, 2 = dark
+extern BYTE config_image_border_width; // Image border width in pixels; 0 disables the border.
+extern BYTE config_log_mode; // 0 = console, 1 = file, 2 = both
 
 #ifdef __cplusplus
 }

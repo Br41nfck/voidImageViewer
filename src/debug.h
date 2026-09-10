@@ -29,6 +29,8 @@ extern "C" {
 void DECLSPEC_NORETURN debug_fatal(const char *format,...);
 
 #ifdef _DEBUG
+void debug_init(void);
+void debug_shutdown(void);
 void debug_printf(const char *format,...);
 #else
 #define debug_printf(...)
