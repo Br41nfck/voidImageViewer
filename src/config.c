@@ -34,21 +34,21 @@ static void _config_write_string(HANDLE h,const char *ascii_key,const wchar_t *s
 static void _config_write_utf8(HANDLE h,const utf8_t *s);
 static void _config_save_settings_by_location(const wchar_t *path,int is_root);
 
-BYTE config_appdata = 0; // store settings in %APPDATA%\voidimageviewer or in the same location as voidimageviewer.exe
-BYTE config_keep_centered = 1; // when zooming out, don't recenter the image. (keep cursor under the same pixel)
-int config_x = 0; // 
-int config_y = 0; // 
-int config_wide = 0; //
-int config_high = 0; // 
-int config_slideshow_rate = 5000; //
-int config_auto_fit_wide_mul = 3; //
-int config_auto_fit_wide_div = 5; //
-int config_auto_fit_high_mul = 3; //
-int config_auto_fit_high_div = 5; //
-int config_short_jump = 500; // 
-int config_medium_jump = 1000; //
-int config_long_jump = 2000; //
-BYTE config_maximized = 0; //
+BYTE config_appdata = 0; // Store settings in %APPDATA%\voidimageviewer instead of beside the executable.
+BYTE config_keep_centered = 1; // Keep the image pixel under the cursor when zooming out.
+int config_x = 0; // Main window left position; zero means calculate a default position.
+int config_y = 0; // Main window top position; zero means calculate a default position.
+int config_wide = 0; // Main window width; zero means calculate a default size.
+int config_high = 0; // Main window height; zero means calculate a default size.
+int config_slideshow_rate = 5000; // Slideshow interval in milliseconds.
+int config_auto_fit_wide_mul = 3; // Numerator used to calculate the default width from the monitor width.
+int config_auto_fit_wide_div = 5; // Denominator used to calculate the default width from the monitor width.
+int config_auto_fit_high_mul = 3; // Numerator used to calculate the default height from the monitor height.
+int config_auto_fit_high_div = 5; // Denominator used to calculate the default height from the monitor height.
+int config_short_jump = 500; // Short image navigation jump in pixels.
+int config_medium_jump = 1000; // Medium image navigation jump in pixels.
+int config_long_jump = 2000; // Long image navigation jump in pixels.
+BYTE config_maximized = 0; // Start the main window maximized.
 int config_slideshow_custom_rate = 3; // custom slideshow rate (see type below)
 BYTE config_allow_shrinking = 1; // prevent resizing an image below 100%
 BYTE config_shrink_blit_mode = CONFIG_SHRINK_BLIT_MODE_HALFTONE; // shrink filter
@@ -62,39 +62,40 @@ BYTE config_auto_zoom = 0; // automatically resize the window to fit the newly l
 BYTE config_auto_zoom_type = 1; // 0 = 50%, 1 = 100%, 2 = 200%
 BYTE config_frame_minus = 0; // show frame counter or remaining frames in status bar
 BYTE config_multiple_instances = 0; // all multiple instances or use a single instance.
-BYTE config_show_status = 1; // 
-BYTE config_show_controls = 1; //
-BYTE config_prevent_sleep = 1; //
-BYTE config_loop_animations_once = 1; //
-BYTE config_mouse_wheel_action = 0; // 0 = zoom, 1 = next/prev, 2=prev/next
-BYTE config_ctrl_mouse_wheel_action = 0; // 0 = zoom, 1 = next/prev, 2=prev/next
-BYTE config_left_click_action = 0; // 0 = scroll, 1 = play/pause slideshow, 2 = play/pause animation, 3=zoom in, 4=next, 5=1:1 scroll, 6=move-window
-BYTE config_right_click_action = 0; // 0 = context menu, 1=zoom out, 2=prev, 
-BYTE config_xbutton_action = 2; // 1=zoom, 2=next
-BYTE config_windowed_background_color_r = 255; //
-BYTE config_windowed_background_color_g = 255; //
-BYTE config_windowed_background_color_b = 255; //
-BYTE config_fullscreen_background_color_r = 0; //
-BYTE config_fullscreen_background_color_g = 0; //
-BYTE config_fullscreen_background_color_b = 0; //
-BYTE config_options_last_page = 0; //
-BYTE config_shuffle = 0; //
-BYTE config_browse_file_open_dialog = 1;
-BYTE config_ontop = 0; // 0 = never, 1 = always, 2 = while slideshow or animating.
+BYTE config_show_status = 1; // Show the status bar.
+BYTE config_show_controls = 1; // Show the playback and navigation controls.
+BYTE config_prevent_sleep = 1; // Prevent the system from sleeping during playback.
+BYTE config_loop_animations_once = 1; // Play animated images at least once in a slideshow.
+BYTE config_mouse_wheel_action = 0; // Action for the mouse wheel: 0 zoom, 1 next/previous, 2 previous/next.
+BYTE config_ctrl_mouse_wheel_action = 0; // Action for Ctrl+mouse wheel: 0 zoom, 1 next/previous, 2 previous/next.
+BYTE config_left_click_action = 0; // Left-click action: 0 scroll, 1 slideshow, 2 animation, 3 zoom in, 4 next, 5 1:1 scroll, 6 move window.
+BYTE config_right_click_action = 0; // Right-click action: 0 context menu, 1 zoom out, 2 previous.
+BYTE config_xbutton_action = 2; // X-button action: 1 zoom, 2 next.
+BYTE config_windowed_background_color_r = 255; // Red component of the windowed image background.
+BYTE config_windowed_background_color_g = 255; // Green component of the windowed image background.
+BYTE config_windowed_background_color_b = 255; // Blue component of the windowed image background.
+BYTE config_fullscreen_background_color_r = 0; // Red component of the fullscreen image background.
+BYTE config_fullscreen_background_color_g = 0; // Green component of the fullscreen image background.
+BYTE config_fullscreen_background_color_b = 0; // Blue component of the fullscreen image background.
+BYTE config_options_last_page = 0; // Last selected Options page.
+BYTE config_shuffle = 0; // Shuffle image navigation.
+BYTE config_browse_file_open_dialog = 1; // Browse to the selected file after opening it.
+BYTE config_ontop = 0; // Keep on top mode: 0 never, 1 always, 2 during slideshow or animation.
 BYTE config_slideshow_custom_rate_type = 1; // 0 = milliseconds, 1 = seconds, 2 = minutes
-BYTE config_scroll_window = 1; //
-BYTE config_preload_next = 1; //
-BYTE config_cache_last = 1; //
-BYTE config_icm = 1; //
-BYTE config_show_menu = 1; // 
-BYTE config_show_caption = 1; //
-BYTE config_show_thickframe = 1; // 
-BYTE config_toolbar_move_window = 1; //
-BYTE config_windowed_hide_cursor = 1; //
-BYTE config_pixel_info = 0; // 
-BYTE config_orientation = 1; // 
-BYTE config_title_bar_format = 1; // 0=full path, 1=filename, 2=none
-BYTE config_retractable_titlebar = 0; // 0 - disable, 1 - enable
+BYTE config_scroll_window = 1; // Scroll the image when it is larger than the window.
+BYTE config_preload_next = 1; // Preload the next image during navigation.
+BYTE config_cache_last = 1; // Keep the last decoded image in memory.
+BYTE config_icm = 1; // Use Image Color Management when rendering.
+BYTE config_show_menu = 1; // Show the application menu.
+BYTE config_show_caption = 1; // Show the standard title bar.
+BYTE config_show_thickframe = 1; // Allow resizing through the thick window frame.
+BYTE config_toolbar_move_window = 1; // Allow moving the window by dragging the toolbar.
+BYTE config_windowed_hide_cursor = 1; // Hide the cursor over the image in windowed mode.
+BYTE config_pixel_info = 0; // Show pixel information in the status bar.
+BYTE config_orientation = 1; // Apply the image orientation metadata.
+BYTE config_title_bar_format = 1; // Title format: 0 full path, 1 filename, 2 none.
+BYTE config_retractable_titlebar = 0; // Replace the standard title bar with a retractable one.
+BYTE config_theme = CONFIG_THEME_SYSTEM; // Application theme: 0 system, 1 light, 2 dark.
 
 static void _config_load_settings_by_location(const wchar_t *path,int is_root)
 {
@@ -166,6 +167,11 @@ static void _config_load_settings_by_location(const wchar_t *path,int is_root)
 		config_toolbar_move_window = ini_get_int(ini,(const utf8_t *)"toolbar_move_window",config_toolbar_move_window);
 		config_title_bar_format = ini_get_int(ini,(const utf8_t *)"title_bar_format",config_title_bar_format);
 		config_retractable_titlebar = ini_get_int(ini, (const utf8_t*)"retractable_titlebar", config_retractable_titlebar);
+		config_theme = ini_get_int(ini, (const utf8_t*)"theme", config_theme);
+		if (config_theme > CONFIG_THEME_DARK)
+		{
+			config_theme = CONFIG_THEME_SYSTEM;
+		}
 
 		if (is_root)
 		{
@@ -374,6 +380,7 @@ static void _config_save_settings_by_location(const wchar_t *path, int is_root)
 			_config_write_int(h,"toolbar_move_window",config_toolbar_move_window);
 			_config_write_int(h,"title_bar_format",config_title_bar_format);
 			_config_write_int(h, "retractable_titlebar", config_retractable_titlebar);
+			_config_write_int(h, "theme", config_theme);
 		
 			// save keys
 			{

@@ -7,10 +7,14 @@
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
-#include "afxres.h"
+#include <windows.h>
+#ifndef IDC_STATIC
+#define IDC_STATIC -1
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
+
 
 /////////////////////////////////////////////////////////////////////////////
 // English (U.S.) resources
@@ -66,7 +70,7 @@ BEGIN
 END
 
 // =================== IDD VIEW ===================
-IDD_VIEW DIALOGEX 0, 0, 194, 200
+IDD_VIEW DIALOGEX 0, 0, 194, 220
 STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD | WS_CLIPSIBLINGS
 EXSTYLE WS_EX_CONTROLPARENT
 FONT 8, "MS Shell Dlg", 0, 0, 0x0
@@ -99,6 +103,8 @@ PUSHBUTTON      "", IDC_FULLSCREENBACKGROUNDCOLOR, 96, 138, 50, 14, BS_BITMAP
 
 CONTROL         "&Retractable Title Bar", IDC_RETRACTABLE_TITLEBAR, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 0, 155, 150, 10
 
+LTEXT           "&Theme:", IDC_STATIC, 0, 176, 74, 10
+COMBOBOX        IDC_THEME_COMBO, 74, 174, 120, 30, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
 
 END
 

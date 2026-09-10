@@ -29,5 +29,8 @@ vs2005/
 vs2019/
 vs2026/
 
+# Nullsoft Scriptable Install System (NSIS)
+
+
 # Logs
 *.log

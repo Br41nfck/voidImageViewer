@@ -90,6 +90,7 @@
 #define IDC_COMBO4							1051
 #define IDC_TITLE_BAR_FORMAT_COMBO			1052
 #define IDC_RETRACTABLE_TITLEBAR			1053
+#define IDC_THEME_COMBO					1054
 
 // Next default values for new objects
 // 

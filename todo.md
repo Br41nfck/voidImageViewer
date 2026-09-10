@@ -5,15 +5,15 @@
 - [X] Option to show full path like MPC
 - [X] Borderless window with retractable title bar
 - [X] Version and Build in info panel
-- [ ] Dark mode (system theme support)
-- [ ] Dark skin (use system theme)
+- [X] Dark mode (system theme support)
+- [X] Dark skin (use system theme)
 - [ ] High DPI icons
 - [ ] Control toolbar customization
 - [ ] Keep window aspect size option
 - [ ] No minimum window size restriction
 
 ## Image Rendering
-- [ ] Fix screen buffer mangling when resizing/auto-fitting
+- [X] Fix screen buffer mangling when resizing/auto-fitting
 - [ ] Maintain correct aspect ratio when window clipped on auto size
 - [ ] Use Direct3D for image rendering when shrinking
 - [ ] OpenGL renderer
@@ -95,3 +95,4 @@
 - [ ] == mehdi
 - [ ] Check ICC usage
 - [ ] Therube note: folder loading behavior with wildcards
+- [ ] Logging to file (config option: console, file, both)

@@ -167,8 +167,6 @@
 
 #define VIV_ID_EDIT_COPY_DISPLAY_AREA		1149
 
-#define BCM_SETSHIELD	0x0000160C
-
 #ifdef VERSION_X64
 	#define VERSION_TARGET_MACHINE "(x64)"
 #else
@@ -201,13 +199,101 @@
 #include "small_pool.h"
 #include "string.h"
 #include "version.h"
+#include "webp.h"
 #include <ShlObj_core.h>
 #include <Shlwapi.h>
 #include <shtypes.h>
+#include <dwmapi.h>
 #include <stdlib.h>
 #include <Uxtheme.h>
 #include <Windows.h>
 #include <windowsx.h>
+#pragma comment(lib, "uxtheme.lib")
+#pragma comment(lib, "dwmapi.lib")
+
+static HBRUSH _viv_theme_background_brush;
+static HBRUSH _viv_theme_control_brush;
+
+static int _viv_theme_is_dark(void)
+{
+	DWORD value = 1;
+	DWORD size = sizeof(value);
+	HKEY key;
+
+	if (config_theme == CONFIG_THEME_DARK)
+	{
+		return 1;
+	}
+
+	if (config_theme != CONFIG_THEME_SYSTEM)
+	{
+		return 0;
+	}
+
+	if (RegOpenKeyExW(HKEY_CURRENT_USER,
+		L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+		0, KEY_READ, &key) == ERROR_SUCCESS)
+	{
+		RegQueryValueExW(key, L"AppsUseLightTheme", NULL, NULL, (LPBYTE)&value, &size);
+		RegCloseKey(key);
+	}
+
+	return value == 0;
+}
+
+static BOOL CALLBACK _viv_theme_child_proc(HWND hwnd, LPARAM lParam)
+{
+	SetWindowTheme(hwnd, lParam ? L"DarkMode_Explorer" : NULL, NULL);
+	return TRUE;
+}
+
+static void _viv_apply_theme(HWND hwnd)
+{
+	int dark = _viv_theme_is_dark();
+	BOOL dark_title_bar = dark ? TRUE : FALSE;
+
+	if (!_viv_theme_background_brush)
+	{
+		_viv_theme_background_brush = CreateSolidBrush(RGB(30, 30, 30));
+		_viv_theme_control_brush = CreateSolidBrush(RGB(37, 37, 38));
+	}
+
+	SetWindowTheme(hwnd, dark ? L"DarkMode_Explorer" : NULL, NULL);
+	DwmSetWindowAttribute(hwnd, 19, &dark_title_bar, sizeof(dark_title_bar));
+	DwmSetWindowAttribute(hwnd, 20, &dark_title_bar, sizeof(dark_title_bar));
+	EnumChildWindows(hwnd, _viv_theme_child_proc, dark);
+	RedrawWindow(hwnd, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
+}
+
+static LRESULT _viv_theme_ctlcolor(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	if (!_viv_theme_is_dark())
+	{
+		return 0;
+	}
+
+	if ((msg == WM_CTLCOLORSTATIC) || (msg == WM_CTLCOLORBTN) ||
+		(msg == WM_CTLCOLOREDIT) || (msg == WM_CTLCOLORLISTBOX) ||
+		(msg == WM_CTLCOLORSCROLLBAR) || (msg == WM_CTLCOLORDLG))
+	{
+		HDC dc = (HDC)wParam;
+		HWND control = (HWND)lParam;
+		LONG_PTR style = GetWindowLongPtr(control, GWL_STYLE);
+
+		SetTextColor(dc, RGB(212, 212, 212));
+		SetBkColor(dc, RGB(30, 30, 30));
+		if ((style & (BS_PUSHBUTTON | BS_DEFPUSHBUTTON | CBS_DROPDOWNLIST |
+			LBS_NOTIFY | ES_AUTOHSCROLL)) != 0)
+		{
+			SetBkColor(dc, RGB(37, 37, 38));
+			return (LRESULT)_viv_theme_control_brush;
+		}
+
+		return (LRESULT)_viv_theme_background_brush;
+	}
+
+	return 0;
+}
 
 enum
 {
@@ -580,7 +666,6 @@ static void _viv_command_with_is_key_repeat(int command,int is_key_repeat);
 static void _viv_controls_show(int show);
 static void _viv_copy(int cut);
 static void _viv_copy_filename(void);
-static void _viv_copy_image(void);
 static void _viv_delete(int permanently);
 static void _viv_delete_color_button_bitmap(HWND hwnd);
 static void _viv_do_initial_shuffle(void);
@@ -701,6 +786,7 @@ static volatile int _viv_load_image_terminate = 0;
 static wchar_t *_viv_last_open_file = 0;
 static wchar_t *_viv_last_open_folder = 0;
 static wchar_t *_viv_load_image_filename = 0;
+static wchar_t *_viv_clipboard_temp_file = 0;
 static wchar_t *_viv_random = 0; // temp shuffle.
 static wchar_t *_viv_status_temp_text = 0;
 
@@ -2512,7 +2598,7 @@ debug_printf("SWP %d %d %d %d\n",rect.left,rect.top,rect.right - rect.left,rect.
 			break;
 			
 		case VIV_ID_EDIT_COPY:
-			_viv_copy_display_area();
+			_viv_copy(0);
 			break;
 
 		case VIV_ID_EDIT_COPY_FILENAME:
@@ -2520,7 +2606,7 @@ debug_printf("SWP %d %d %d %d\n",rect.left,rect.top,rect.right - rect.left,rect.
 			break;
 
 		case VIV_ID_EDIT_COPY_IMAGE:
-			_viv_copy_image();
+			_viv_copy(0);
 			break;
 
 		case VIV_ID_EDIT_PASTE:
@@ -2778,6 +2864,9 @@ static void _viv_exit(void)
 
 static int _viv_save_clipboard_image_to_file(const wchar_t* filename)
 {
+	HBITMAP hBitmap = NULL;
+	HBITMAP clipboardBitmap = NULL;
+
 	if (!OpenClipboard(_viv_hwnd))
 	{
 		debug_printf("_viv_save_clipboard_image_to_file: OpenClipboard failed\n");
@@ -2791,14 +2880,28 @@ static int _viv_save_clipboard_image_to_file(const wchar_t* filename)
 	}
 	if (!hDIB)
 	{
-		hDIB = GetClipboardData(CF_BITMAP);
+		clipboardBitmap = (HBITMAP)GetClipboardData(CF_BITMAP);
 	}
 
-	if (!hDIB)
+	if (!hDIB && !clipboardBitmap)
 	{
 		debug_printf("_viv_save_clipboard_image_to_file: No image data in clipboard\n");
 		CloseClipboard();
 		return 0;
+	}
+
+	if (!hDIB)
+	{
+		hBitmap = (HBITMAP)CopyImage(clipboardBitmap, IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+		CloseClipboard();
+
+		if (!hBitmap)
+		{
+			debug_printf("_viv_save_clipboard_image_to_file: CopyImage failed\n");
+			return 0;
+		}
+
+		goto bitmap_ready;
 	}
 
 	BITMAPINFOHEADER* pBI = (BITMAPINFOHEADER*)GlobalLock(hDIB);
@@ -2809,14 +2912,8 @@ static int _viv_save_clipboard_image_to_file(const wchar_t* filename)
 		return 0;
 	}
 
-	int width = pBI->biWidth;
-	int height = abs(pBI->biHeight);
-	int bitsPerPixel = pBI->biBitCount;
-
-	if (bitsPerPixel < 24) bitsPerPixel = 24;
-
 	HDC hdc = GetDC(NULL);
-	HBITMAP hBitmap = CreateDIBitmap(hdc, pBI, CBM_INIT,
+	hBitmap = CreateDIBitmap(hdc, pBI, CBM_INIT,
 		(BYTE*)pBI + pBI->biSize + (pBI->biClrUsed * sizeof(RGBQUAD)),
 		(BITMAPINFO*)pBI, DIB_RGB_COLORS);
 	ReleaseDC(NULL, hdc);
@@ -2830,6 +2927,7 @@ static int _viv_save_clipboard_image_to_file(const wchar_t* filename)
 		return 0;
 	}
 
+	bitmap_ready:
 	BITMAP bm;
 	GetObject(hBitmap, sizeof(BITMAP), &bm);
 
@@ -3148,6 +3246,13 @@ static LRESULT CALLBACK _viv_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam
 								CloseHandle(_viv_load_image_thread);
 								
 								_viv_load_image_thread = 0;
+							}
+
+							if (_viv_clipboard_temp_file)
+							{
+								DeleteFile(_viv_clipboard_temp_file);
+								mem_free(_viv_clipboard_temp_file);
+								_viv_clipboard_temp_file = 0;
 							}
 						
 							if (_viv_load_image_filename)
@@ -4367,19 +4472,20 @@ debug_printf("NEXT AFTER LOAD %S\n",fd->cFileName);
 
 			if (OpenClipboard(hwnd))
 			{
-				HANDLE hDIB = GetClipboardData(CF_DIB);
-				if (!hDIB)
+				HANDLE image_data = GetClipboardData(CF_DIB);
+				if (!image_data)
 				{
-					hDIB = GetClipboardData(CF_DIBV5);
+					image_data = GetClipboardData(CF_DIBV5);
 				}
-				if (!hDIB)
+				if (!image_data)
 				{
-					hDIB = GetClipboardData(CF_BITMAP);
+					image_data = GetClipboardData(CF_BITMAP);
 				}
 
-				if (hDIB)
+				if (image_data)
 				{
 					debug_printf("WM_PASTE: Got DIB/BITMAP from clipboard\n");
+					CloseClipboard();
 
 					wchar_t temp_path[MAX_PATH];
 					wchar_t temp_file[MAX_PATH];
@@ -4394,9 +4500,13 @@ debug_printf("NEXT AFTER LOAD %S\n",fd->cFileName);
 					{
 						debug_printf("WM_PASTE: Saved to temp file: %S\n", temp_file);
 
+						if (_viv_clipboard_temp_file)
+						{
+							DeleteFile(_viv_clipboard_temp_file);
+							mem_free(_viv_clipboard_temp_file);
+						}
+						_viv_clipboard_temp_file = string_alloc(temp_file);
 						_viv_open_from_filename(temp_file);
-
-						DeleteFile(temp_file);
 					}
 					else
 					{
@@ -4412,17 +4522,15 @@ debug_printf("NEXT AFTER LOAD %S\n",fd->cFileName);
 						if (hdrop)
 						{
 							debug_printf("WM_PASTE: Got HDROP from clipboard\n");
-							SendMessage(hwnd, WM_DROPFILES, (WPARAM)hdrop, 0);
-							GlobalUnlock(hglobal);
+							SendMessage(hwnd, WM_DROPFILES, (WPARAM)hglobal, 0);
 						}
 					}
 					else
 					{
 						debug_printf("WM_PASTE: No supported clipboard format found\n");
 					}
-				}
-
-				CloseClipboard();
+						CloseClipboard();
+					}
 			}
 			else
 			{
@@ -4461,17 +4569,9 @@ debug_printf("NEXT AFTER LOAD %S\n",fd->cFileName);
 
 				update_hrgn = os_CreateRectRgn(0,0,0,0);
 
-				// get visible region
-				// this MUST be done between begin and end paint.
-				GetRandomRgn(ps.hdc,update_hrgn,SYSRGN);
-				
-				if (os_is_nt)
-				{
-					POINT pt;
-
-					GetDCOrgEx(ps.hdc,&pt);
-					OffsetRgn(update_hrgn,-pt.x,-pt.y);
-				}
+				// Use the region invalidated by the window manager. SYSRGN describes
+				// the visible DC and can contain stale areas while the window is resized.
+				SetRectRgn(update_hrgn,ps.rcPaint.left,ps.rcPaint.top,ps.rcPaint.right,ps.rcPaint.bottom);
 				
 				// mirror
 				if ((os_GetLayout) && (os_GetLayout(ps.hdc) & LAYOUT_RTL))
@@ -5722,6 +5822,17 @@ static int _viv_init(int nCmdShow)
 		window_style,
 		rect.left,rect.top,rect.right - rect.left,rect.bottom - rect.top,
 		0,config_show_menu ? _viv_hmenu : NULL,os_hinstance,NULL);
+
+	if (_viv_hwnd)
+	{
+		HICON large_icon = (HICON)LoadImage(os_hinstance, MAKEINTRESOURCE(IDI_ICON1), IMAGE_ICON,
+			GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON), LR_DEFAULTCOLOR);
+		HICON small_icon = (HICON)LoadImage(os_hinstance, MAKEINTRESOURCE(IDI_ICON1), IMAGE_ICON,
+			GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR);
+
+		SendMessage(_viv_hwnd, WM_SETICON, ICON_BIG, (LPARAM)large_icon);
+		SendMessage(_viv_hwnd, WM_SETICON, ICON_SMALL, (LPARAM)small_icon);
+	}
 	
 	if (config_retractable_titlebar) _viv_update_titlebar_visibility();
 
@@ -5749,6 +5860,7 @@ static int _viv_init(int nCmdShow)
 	_viv_update_title();
 
 	_viv_update_ontop();
+	_viv_apply_theme(_viv_hwnd);
 	
 	si.cb = sizeof(STARTUPINFO);
 	GetStartupInfo(&si);
@@ -7555,6 +7667,12 @@ static void _viv_delete(int permanently)
 
 static INT_PTR CALLBACK _viv_rename_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 {
+	if ((msg >= WM_CTLCOLORMSGBOX && msg <= WM_CTLCOLORSTATIC) || msg == WM_CTLCOLORDLG)
+	{
+		LRESULT color = _viv_theme_ctlcolor(hwnd, msg, wParam, lParam);
+		if (color) return color;
+	}
+
 	switch(msg)
 	{
 		case WM_INITDIALOG:
@@ -7804,7 +7922,10 @@ static void _viv_set_clipboard_image(void)
 							SelectObject(mem2_hdc,last_mem2_hbitmap);
 							SelectObject(mem1_hdc,last_mem1_hbitmap);
 							
-							SetClipboardData(CF_BITMAP,mem1_hbitmap);
+							if (!SetClipboardData(CF_BITMAP,mem1_hbitmap))
+							{
+								DeleteObject(mem1_hbitmap);
+							}
 						}
 
 						DeleteDC(mem2_hdc);
@@ -7815,21 +7936,6 @@ static void _viv_set_clipboard_image(void)
 				
 				ReleaseDC(0,screen_hdc);
 			}
-		}
-	}
-}
-
-static void _viv_copy_image(void)
-{
-	if (*_viv_current_fd->cFileName)
-	{
-		if (OpenClipboard(_viv_hwnd))
-		{
-			EmptyClipboard();
-			
-			_viv_set_clipboard_image();
-			
-			CloseClipboard();
 		}
 	}
 }
@@ -8214,10 +8320,17 @@ static void _viv_blank(void)
 
 static INT_PTR CALLBACK _viv_options_general_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 {
+	if ((msg >= WM_CTLCOLORMSGBOX && msg <= WM_CTLCOLORSTATIC) || msg == WM_CTLCOLORDLG)
+	{
+		LRESULT color = _viv_theme_ctlcolor(hwnd, msg, wParam, lParam);
+		if (color) return color;
+	}
+
 	switch(msg)
 	{
 		case WM_INITDIALOG:
 		{
+			_viv_apply_theme(hwnd);
 			int exti;
 
 			if (config_appdata) 
@@ -8387,6 +8500,12 @@ static void _viv_options_remove_key(HWND hwnd)
 
 static INT_PTR CALLBACK _viv_edit_key_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 {
+	if ((msg >= WM_CTLCOLORMSGBOX && msg <= WM_CTLCOLORSTATIC) || msg == WM_CTLCOLORDLG)
+	{
+		LRESULT color = _viv_theme_ctlcolor(hwnd, msg, wParam, lParam);
+		if (color) return color;
+	}
+
 	switch(msg)
 	{
 		case WM_INITDIALOG:
@@ -8601,6 +8720,12 @@ static INT_PTR CALLBACK _viv_options_controls_proc(HWND hwnd,UINT msg,WPARAM wPa
 
 static INT_PTR CALLBACK _viv_options_view_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	if ((msg >= WM_CTLCOLORMSGBOX && msg <= WM_CTLCOLORSTATIC) || msg == WM_CTLCOLORDLG)
+	{
+		LRESULT color = _viv_theme_ctlcolor(hwnd, msg, wParam, lParam);
+		if (color) return color;
+	}
+
 	switch (msg)
 	{
 	case WM_INITDIALOG:
@@ -8633,6 +8758,11 @@ static INT_PTR CALLBACK _viv_options_view_proc(HWND hwnd, UINT msg, WPARAM wPara
 
 		// Auto zoom
 		CheckDlgButton(hwnd, IDC_AUTO_ZOOM, config_auto_zoom ? BST_CHECKED : BST_UNCHECKED);
+
+		os_ComboBox_AddString(hwnd, IDC_THEME_COMBO, (const utf8_t*)"System default");
+		os_ComboBox_AddString(hwnd, IDC_THEME_COMBO, (const utf8_t*)"Light");
+		os_ComboBox_AddString(hwnd, IDC_THEME_COMBO, (const utf8_t*)"Dark");
+		ComboBox_SetCurSel(GetDlgItem(hwnd, IDC_THEME_COMBO), config_theme);
 		
 		// Auto zoom type
 		os_ComboBox_AddString(hwnd, IDC_COMBO4, (const utf8_t*)"50%");
@@ -8682,6 +8812,21 @@ static INT_PTR CALLBACK _viv_options_view_proc(HWND hwnd, UINT msg, WPARAM wPara
 		case IDC_AUTO_ZOOM:
 			EnableWindow(GetDlgItem(hwnd, IDC_COMBO4),
 				IsDlgButtonChecked(hwnd, IDC_AUTO_ZOOM) == BST_CHECKED);
+			break;
+
+		case IDC_THEME_COMBO:
+			if (HIWORD(wParam) == CBN_SELCHANGE)
+			{
+				int theme = ComboBox_GetCurSel((HWND)lParam);
+				if (theme >= CONFIG_THEME_SYSTEM && theme <= CONFIG_THEME_DARK)
+				{
+					config_theme = (BYTE)theme;
+					_viv_apply_theme(_viv_hwnd);
+					_viv_apply_theme(GetParent(hwnd));
+					_viv_apply_theme(hwnd);
+					config_save_settings(config_appdata);
+				}
+			}
 			break;
 
 		case IDC_TITLE_BAR_FORMAT_COMBO:
@@ -8795,6 +8940,12 @@ static void _viv_options_update_sheild(HWND hwnd)
 
 static INT_PTR CALLBACK _viv_options_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 {
+	if ((msg >= WM_CTLCOLORMSGBOX && msg <= WM_CTLCOLORSTATIC) || msg == WM_CTLCOLORDLG)
+	{
+		LRESULT color = _viv_theme_ctlcolor(hwnd, msg, wParam, lParam);
+		if (color) return color;
+	}
+
 	switch(msg)
 	{
 		case WM_NOTIFY:
@@ -8823,6 +8974,7 @@ static INT_PTR CALLBACK _viv_options_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARA
 			
 		case WM_INITDIALOG:
 		{
+		_viv_apply_theme(hwnd);
 			os_center_dialog(hwnd);
 
 			{
@@ -8878,6 +9030,7 @@ static INT_PTR CALLBACK _viv_options_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARA
 
 			_viv_options_treeview_changed(hwnd);
 			_viv_options_update_sheild(hwnd);
+			_viv_apply_theme(hwnd);
 
 			return TRUE;
 		}
@@ -9929,10 +10082,17 @@ static int _viv_is_window_maximized(HWND hwnd)
 
 static INT_PTR CALLBACK _viv_custom_rate_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 {
+	if ((msg >= WM_CTLCOLORMSGBOX && msg <= WM_CTLCOLORSTATIC) || msg == WM_CTLCOLORDLG)
+	{
+		LRESULT color = _viv_theme_ctlcolor(hwnd, msg, wParam, lParam);
+		if (color) return color;
+	}
+
 	switch(msg)
 	{
 		case WM_INITDIALOG:
 		{
+		_viv_apply_theme(hwnd);
 			os_center_dialog(hwnd);
 
 			SetDlgItemInt(hwnd,IDC_CUSTOM_RATE_EDIT,config_slideshow_custom_rate,FALSE);
@@ -9969,6 +10129,12 @@ static INT_PTR CALLBACK _viv_custom_rate_proc(HWND hwnd,UINT msg,WPARAM wParam,L
 
 static INT_PTR CALLBACK _viv_about_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 {
+	if ((msg >= WM_CTLCOLORMSGBOX && msg <= WM_CTLCOLORSTATIC) || msg == WM_CTLCOLORDLG)
+	{
+		LRESULT color = _viv_theme_ctlcolor(hwnd, msg, wParam, lParam);
+		if (color) return color;
+	}
+
 	switch(msg)
 	{
 		case WM_CTLCOLOREDIT:	
@@ -10010,6 +10176,7 @@ static INT_PTR CALLBACK _viv_about_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM 
 			
 		case WM_INITDIALOG:
 		{
+			_viv_apply_theme(hwnd);
 			HFONT hfont;
 			LOGFONT lf;
 			wchar_t version_wbuf[STRING_SIZE];
@@ -11753,8 +11920,11 @@ static LRESULT CALLBACK _viv_rebar_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM 
 									case CDDS_PREPAINT:	
 									{
 										RECT rect;
+						NMTBCUSTOMDRAW *custom_draw = (NMTBCUSTOMDRAW *)lParam;
+						custom_draw->clrText = _viv_theme_is_dark() ? RGB(212, 212, 212) : GetSysColor(COLOR_BTNTEXT);
+						custom_draw->clrBtnFace = _viv_theme_is_dark() ? RGB(37, 37, 38) : GetSysColor(COLOR_BTNFACE);
 										GetClientRect(_viv_toolbar_hwnd,&rect);
-										FillRect(((NMTBCUSTOMDRAW *)lParam)->nmcd.hdc,&rect,(HBRUSH)(COLOR_BTNFACE+1));
+						FillRect(custom_draw->nmcd.hdc,&rect,_viv_theme_is_dark() ? _viv_theme_control_brush : (HBRUSH)(COLOR_BTNFACE+1));
 										return CDRF_NOTIFYITEMDRAW;
 									}
 								}
@@ -11808,7 +11978,7 @@ static LRESULT CALLBACK _viv_rebar_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM 
 			rect.bottom = high;
 			
 //			FillRect(ps.hdc,&rect,(HBRUSH)(COLOR_WINDOW + 1));
-			FillRect(ps.hdc,&rect,(HBRUSH)(COLOR_BTNFACE + 1));
+			FillRect(ps.hdc,&rect,_viv_theme_is_dark() ? _viv_theme_control_brush : (HBRUSH)(COLOR_BTNFACE + 1));
 			
 			EndPaint(hwnd,&ps);
 			
@@ -13306,10 +13476,17 @@ static void _viv_jumpto_open_sel(HWND hwnd)
 			
 static LRESULT CALLBACK _viv_jumpto_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 {
+	if ((msg >= WM_CTLCOLORMSGBOX && msg <= WM_CTLCOLORSTATIC) || msg == WM_CTLCOLORDLG)
+	{
+		LRESULT color = _viv_theme_ctlcolor(hwnd, msg, wParam, lParam);
+		if (color) return color;
+	}
+
 	switch(msg)
 	{
 		case WM_INITDIALOG:
 		{
+			_viv_apply_theme(hwnd);
 			int cur_index;
 			
 			cur_index = LB_ERR;
@@ -13625,10 +13802,17 @@ static int _viv_nav_compare(const _viv_nav_item_t *a,const _viv_nav_item_t *b)
 
 static INT_PTR CALLBACK _viv_search_everything_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 {
+	if ((msg >= WM_CTLCOLORMSGBOX && msg <= WM_CTLCOLORSTATIC) || msg == WM_CTLCOLORDLG)
+	{
+		LRESULT color = _viv_theme_ctlcolor(hwnd, msg, wParam, lParam);
+		if (color) return color;
+	}
+
 	switch(msg)
 	{
 		case WM_INITDIALOG:
 		{
+			_viv_apply_theme(hwnd);
 			wchar_t caption_wbuf[STRING_SIZE];
 			
 			os_center_dialog(hwnd);

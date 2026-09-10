@@ -57,6 +57,10 @@ typedef struct config_key_s
 #define CONFIG_MAG_FILTER_COLORONCOLOR			0
 #define CONFIG_MAG_FILTER_HALFTONE				1
 
+#define CONFIG_THEME_SYSTEM						0
+#define CONFIG_THEME_LIGHT						1
+#define CONFIG_THEME_DARK						2
+
 void config_load_settings(void);
 void config_save_settings(int appdata);
 void config_apply_settings(void);
@@ -123,6 +127,7 @@ extern BYTE config_pixel_info;
 extern BYTE config_orientation;
 extern BYTE config_title_bar_format;
 extern BYTE config_retractable_titlebar; // 0 - disabled, 1 - enabled
+extern BYTE config_theme; // 0 = system, 1 = light, 2 = dark
 
 #ifdef __cplusplus
 }
