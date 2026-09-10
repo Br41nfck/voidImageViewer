@@ -1021,6 +1021,7 @@ _viv_default_key_t _viv_default_keys[] =
 	{VIV_ID_VIEW_ZOOM_RESET,CONFIG_KEYFLAG_CTRL | '0'},
 	{VIV_ID_VIEW_ONTOP_ALWAYS,CONFIG_KEYFLAG_CTRL | 'T'},
 	{VIV_ID_VIEW_OPTIONS,'O'},
+	{VIV_ID_NAV_SHUFFLE,'R'},
 	{VIV_ID_VIEW_REFRESH,VK_F5},
 	{VIV_ID_SLIDESHOW_PAUSE,VK_SPACE},
 	{VIV_ID_SLIDESHOW_RATE_DEC,VK_DOWN},
@@ -4050,16 +4051,17 @@ debug_printf("NEXT AFTER LOAD %S\n",fd->cFileName);
 				case _VIV_DOING_MSCROLL:
 
 					{
-						int mx;
 						int my;
 						POINT pt;
 						GetCursorPos(&pt);
 
-						mx = _viv_mdoing_x - pt.x;
 						my = _viv_mdoing_y - pt.y;
 						
-						if ((mx) || (my))
+						if (my)
 						{
+							// Moving up decreases the interval (faster slideshow);
+							// moving down increases it (slower slideshow).
+							_viv_increase_rate(my > 0 ? 1 : 0);
 							SetCursorPos(_viv_mdoing_x,_viv_mdoing_y);
 						}
 					}

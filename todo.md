@@ -1,4 +1,4 @@
-# TODO
+# TODO 
 
 ## UI & Display
 - [X] Add UI option for config_title_bar_format
@@ -35,8 +35,8 @@
 ## Keyboard & Mouse
 - [X] Ctrl+C to copy display area to clipboard
 - [X] Ctrl+V to paste image from clipboard
-- [ ] Middle mouse: scroll to control slideshow speed
-- [ ] Keyboard shortcut to toggle randomize
+- [X] Middle mouse: scroll to control slideshow speed
+- [X] Keyboard shortcut to toggle randomize
 
 ## File Operations
 - [ ] Undo delete (re-add image to playlist)
