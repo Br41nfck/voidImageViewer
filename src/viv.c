@@ -3304,26 +3304,26 @@ static LRESULT CALLBACK _viv_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam
 								_viv_load_image_thread = 0;
 							}
 
-							if ((e->type == _VIV_REPLY_LOAD_IMAGE_COMPLETE) && !_viv_load_is_preload)
+							if (e->type == _VIV_REPLY_LOAD_IMAGE_COMPLETE)
 							{
 								VIV_UINT64 elapsed = os_get_tick_count() - _viv_load_start_tick;
 								LARGE_INTEGER size;
 
 								size.HighPart = _viv_load_fd->nFileSizeHigh;
 								size.LowPart = _viv_load_fd->nFileSizeLow;
-
+								
 								_viv_load_elapsed = elapsed;
 
 								if (size.QuadPart > 0)
 								{
-									if (elapsed == 0)
-									{
-										_viv_load_speed = 0.0;
-									}
-									else
+									if (elapsed > 0)
 									{
 										_viv_load_speed = ((double)size.QuadPart * 1000.0) /
 											((double)elapsed * 1024.0 * 1024.0);
+									}
+									else
+									{
+										_viv_load_speed = 0.0;
 									}
 									_viv_load_speed_valid = 1;
 								}
@@ -11697,12 +11697,12 @@ static void _viv_status_update(void)
 
 		if (_viv_load_speed_valid)
 		{
-			if (_viv_load_speed > 0.0)
-			{
-				string_printf(speed_buf, "Speed: %.2f MB/s", _viv_load_speed);
-			}
+			//if (_viv_load_speed > 0.0)
+			//{
+			//	string_printf(speed_buf, "Speed: %.2f MB/s", _viv_load_speed);
+			//}
 
-			string_printf(load_time_buf, "Load: %llu ms", _viv_load_elapsed);
+			string_printf(load_time_buf, "Load: %u ms", (unsigned int)_viv_load_elapsed/1000);
 		}
 
 		if ((_viv_image_wide) && (_viv_image_high))
