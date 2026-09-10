@@ -51,6 +51,8 @@
 - [ ] Generate shuffle list for randomize option
 - [ ] Ken Burns Effect Slideshows with FFmpeg
 - [ ] "Play All Instances" option
+- [X] Keep last image location
+- [X] File Viewer supported files in Options
 
 ## IPC & Piping
 - [ ] Get image width/length via IPC
@@ -97,3 +99,4 @@
 - [ ] Check ICC usage
 - [ ] Therube note: folder loading behavior with wildcards
 - [X] Logging to file (config option: console, file, both)
+- [X] Autoincrement version after successced build

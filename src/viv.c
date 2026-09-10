@@ -529,6 +529,7 @@ static INT_PTR CALLBACK _viv_options_controls_proc(HWND hwnd, UINT msg, WPARAM w
 static INT_PTR CALLBACK _viv_options_general_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 static INT_PTR CALLBACK _viv_options_proc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 static INT_PTR CALLBACK _viv_options_view_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static void _viv_options_update_supported_files(HWND options_hwnd);
 static INT_PTR CALLBACK _viv_rename_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
 static INT_PTR CALLBACK _viv_search_everything_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
 static DLGPROC _viv_options_page_procs[] = { _viv_options_general_proc,_viv_options_view_proc,_viv_options_controls_proc };
@@ -1185,6 +1186,40 @@ const WORD _viv_association_dlg_item_id[] =
 
 #define _VIV_ASSOCIATION_COUNT	(sizeof(_viv_association_extensions) / sizeof(const wchar_t *))
 
+static void _viv_options_update_supported_files(HWND options_hwnd)
+{
+	HWND general_page = GetDlgItem(options_hwnd, VIV_ID_OPTIONS_GENERAL);
+	HWND view_page = GetDlgItem(options_hwnd, VIV_ID_OPTIONS_VIEW);
+	wchar_t text[STRING_SIZE];
+	int exti;
+	int first = 1;
+
+	string_copy(text, L"Supported files:");
+	for (exti = 0; exti < _VIV_ASSOCIATION_COUNT; exti++)
+	{
+		if (IsDlgButtonChecked(general_page, _viv_association_dlg_item_id[exti]) == BST_CHECKED)
+		{
+			if (first)
+			{
+				string_cat(text, L" ");
+				first = 0;
+			}
+			else
+			{
+				string_cat(text, L", ");
+			}
+
+			string_cat(text, L".");
+			string_cat_utf8(text, (const utf8_t *)_viv_association_extensions[exti]);
+		}
+	}
+
+	if (view_page)
+	{
+		SetDlgItemText(view_page, IDC_SUPPORTED_FILES, text);
+	}
+}
+
 // load unicode for windows 95/98
 // TODO: do this for x86 only
 HMODULE LoadUnicowsProc(void);
@@ -1650,8 +1685,15 @@ debug_printf("open filename: %S\n",full_path_and_filename);
 		else
 		{
 			string_copy(fd.cFileName,full_path_and_filename);
-			
-			_viv_open(&fd,0);
+
+			if (_viv_is_valid_filename(&fd))
+			{
+				_viv_open(&fd,0);
+			}
+			else
+			{
+				ret = FALSE;
+			}
 		}
 	}
 	else
@@ -1676,7 +1718,10 @@ debug_printf("open filename: %S\n",full_path_and_filename);
 				else
 				{
 					string_copy(fd.cFileName,full_path_and_filename);
-					_viv_playlist_add(&fd);
+					if (_viv_is_valid_filename(&fd))
+					{
+						_viv_playlist_add(&fd);
+					}
 				}
 					
 				if (!FindNextFile(h,&fd))
@@ -1813,6 +1858,10 @@ debug_printf("CURRENTLY LOADING %S preload %d\n",_viv_load_image_filename,_viv_l
 		}
 		
 		_viv_load_image_filename = string_alloc(fd->cFileName);
+		if (!is_preload && config_keep_last_location)
+		{
+			string_copy(config_last_location, fd->cFileName);
+		}
 		_viv_load_is_preload = is_preload;
 		_viv_preload_is_prev = _viv_last_is_prev;
 		_viv_preload_state = 0;
@@ -5498,6 +5547,14 @@ static void _viv_process_command_line(wchar_t *cl)
 		}
 	}
 	
+	if ((file_count == 0) && config_keep_last_location && config_last_location[0])
+	{
+		if (_viv_open_from_filename(config_last_location))
+		{
+			file_count = 1;
+		}
+	}
+
 	debug_printf("file count %d\n",file_count);
 
 	if (file_count >= 1)
@@ -6759,7 +6816,8 @@ static int _viv_is_valid_filename(WIN32_FIND_DATA *fd)
 			
 			for(exti=0;exti<_VIV_ASSOCIATION_COUNT;exti++)
 			{
-				if (string_icompare_lowercase_ascii(e,_viv_association_extensions[exti]) == 0) 
+				if ((string_icompare_lowercase_ascii(e,_viv_association_extensions[exti]) == 0) &&
+					_viv_is_association(_viv_association_extensions[exti]))
 				{
 					return 1;
 				}
@@ -8414,9 +8472,22 @@ static INT_PTR CALLBACK _viv_options_general_proc(HWND hwnd,UINT msg,WPARAM wPar
 					CheckDlgButton(hwnd,IDC_TIF,check);
 					CheckDlgButton(hwnd,IDC_TIFF,check);
 					CheckDlgButton(hwnd,IDC_WEBP,check);
+					_viv_options_update_supported_files(GetParent(hwnd));
 					
 					break;
 				}
+
+				case IDC_BMP:
+				case IDC_GIF:
+				case IDC_ICO:
+				case IDC_JPEG:
+				case IDC_JPG:
+				case IDC_PNG:
+				case IDC_TIF:
+				case IDC_TIFF:
+				case IDC_WEBP:
+					_viv_options_update_supported_files(GetParent(hwnd));
+					break;
 			}
 					
 			break;
@@ -8818,7 +8889,9 @@ static INT_PTR CALLBACK _viv_options_view_proc(HWND hwnd, UINT msg, WPARAM wPara
 		CheckDlgButton(hwnd, IDC_CACHE_LAST_IMAGE, config_cache_last ? BST_CHECKED : BST_UNCHECKED);
 
 		CheckDlgButton(hwnd, IDC_RETRACTABLE_TITLEBAR, config_retractable_titlebar ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwnd, IDC_KEEP_LAST_LOCATION, config_keep_last_location ? BST_CHECKED : BST_UNCHECKED);
 		SetDlgItemInt(hwnd, IDC_IMAGE_BORDER_WIDTH, config_image_border_width, FALSE);
+		_viv_options_update_supported_files(GetParent(hwnd));
 
 		SetWindowLongPtr(GetDlgItem(hwnd, IDC_WINDOWEDBACKGROUNDCOLOR), GWLP_USERDATA,
 			RGB(config_windowed_background_color_r, config_windowed_background_color_g, config_windowed_background_color_b));
@@ -9055,7 +9128,7 @@ static INT_PTR CALLBACK _viv_options_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARA
 						os_EnableThemeDialogTexture(page_hwnd,ETDT_ENABLETAB);
 					}
 
-					SetWindowPos(page_hwnd,HWND_TOP,rect.left,rect.top,rect.right - rect.left,rect.bottom - rect.top,SWP_NOSIZE|SWP_NOACTIVATE);
+					SetWindowPos(page_hwnd,HWND_TOP,rect.left,rect.top,rect.right - rect.left,rect.bottom - rect.top,SWP_NOACTIVATE);
 				}
 			}
 
@@ -9231,6 +9304,7 @@ static INT_PTR CALLBACK _viv_options_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARA
 						config_loop_animations_once = IsDlgButtonChecked(view_page,IDC_LOOP_ANIMATIONS_ONCE) == BST_CHECKED ? 1 : 0;
 						config_preload_next = IsDlgButtonChecked(view_page,IDC_PRELOAD_NEXT_IMAGE) == BST_CHECKED ? 1 : 0;
 						config_cache_last = IsDlgButtonChecked(view_page,IDC_CACHE_LAST_IMAGE) == BST_CHECKED ? 1 : 0;
+						config_keep_last_location = IsDlgButtonChecked(view_page, IDC_KEEP_LAST_LOCATION) == BST_CHECKED ? 1 : 0;
 						config_retractable_titlebar = IsDlgButtonChecked(view_page, IDC_RETRACTABLE_TITLEBAR) == BST_CHECKED;
 						InvalidateRect(_viv_hwnd, 0, FALSE);
 

@@ -64,6 +64,7 @@ typedef struct config_key_s
 #define CONFIG_LOG_CONSOLE						0
 #define CONFIG_LOG_FILE						1
 #define CONFIG_LOG_BOTH						2
+#define CONFIG_LAST_LOCATION_SIZE				1024
 
 void config_load_settings(void);
 void config_save_settings(int appdata);
@@ -133,6 +134,8 @@ extern BYTE config_title_bar_format;
 extern BYTE config_retractable_titlebar; // 0 - disabled, 1 - enabled
 extern BYTE config_theme; // 0 = system, 1 = light, 2 = dark
 extern BYTE config_image_border_width; // Image border width in pixels; 0 disables the border.
+extern BYTE config_keep_last_location; // Restore the last opened file on startup.
+extern wchar_t config_last_location[CONFIG_LAST_LOCATION_SIZE]; // Last opened file path.
 extern BYTE config_log_mode; // 0 = console, 1 = file, 2 = both
 
 #ifdef __cplusplus
