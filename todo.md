@@ -22,6 +22,7 @@
 - [ ] Copy zoomed part to buffer to avoid GDI issues at high zoom
 - [ ] Graphics::GetHalftonePalette for 256 color mode
 - [X] Image border
+- [X] Image loading time
 
 ## Zoom & Navigation
 - [ ] Set/get zoom level via IPC

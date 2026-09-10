@@ -787,6 +787,9 @@ static volatile int _viv_load_image_terminate = 0;
 static wchar_t *_viv_last_open_file = 0;
 static wchar_t *_viv_last_open_folder = 0;
 static wchar_t *_viv_load_image_filename = 0;
+static VIV_UINT64 _viv_load_start_tick = 0;
+static double _viv_load_speed = 0.0;
+static BYTE _viv_load_speed_valid = 0;
 static wchar_t *_viv_clipboard_temp_file = 0;
 static wchar_t *_viv_random = 0; // temp shuffle.
 static wchar_t *_viv_status_temp_text = 0;
@@ -1858,6 +1861,8 @@ debug_printf("CURRENTLY LOADING %S preload %d\n",_viv_load_image_filename,_viv_l
 		}
 		
 		_viv_load_image_filename = string_alloc(fd->cFileName);
+		_viv_load_start_tick = os_get_tick_count();
+		_viv_load_speed_valid = 0;
 		if (!is_preload && config_keep_last_location)
 		{
 			string_copy(config_last_location, fd->cFileName);
@@ -3296,6 +3301,21 @@ static LRESULT CALLBACK _viv_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam
 								CloseHandle(_viv_load_image_thread);
 								
 								_viv_load_image_thread = 0;
+							}
+
+							if ((e->type == _VIV_REPLY_LOAD_IMAGE_COMPLETE) && !_viv_load_is_preload)
+							{
+								VIV_UINT64 elapsed = os_get_tick_count() - _viv_load_start_tick;
+								LARGE_INTEGER size;
+
+								size.HighPart = _viv_load_fd->nFileSizeHigh;
+								size.LowPart = _viv_load_fd->nFileSizeLow;
+								if (elapsed && size.QuadPart)
+								{
+									_viv_load_speed = ((double)size.QuadPart * (double)os_get_tick_freq()) /
+										((double)elapsed * 1024.0 * 1024.0);
+									_viv_load_speed_valid = 1;
+								}
 							}
 
 							if (_viv_clipboard_temp_file)
@@ -11633,6 +11653,7 @@ static void _viv_status_update(void)
 		wchar_t frame_buf[STRING_SIZE];
 		wchar_t pixel_pos_buf[STRING_SIZE];
 		wchar_t pixel_rgb_buf[STRING_SIZE];
+		wchar_t speed_buf[STRING_SIZE];
 		wchar_t version_buf[64];
 		const wchar_t* preload_buf;
 		HDC hdc;
@@ -11641,6 +11662,7 @@ static void _viv_status_update(void)
 		int preload_wide;
 		int pixel_pos_wide;
 		int pixel_rgb_wide;
+		int speed_wide;
 		int version_wide;
 		int minwide;
 
@@ -11651,6 +11673,11 @@ static void _viv_status_update(void)
 		preload_buf = 0;
 		*pixel_pos_buf = 0;
 		*pixel_rgb_buf = 0;
+		*speed_buf = 0;
+		if (_viv_load_speed_valid)
+		{
+			string_printf(speed_buf, "Speed: %.2f MB/s", _viv_load_speed);
+		}
 
 		if ((_viv_image_wide) && (_viv_image_high))
 		{
@@ -11748,6 +11775,7 @@ static void _viv_status_update(void)
 		preload_wide = 0;
 		pixel_pos_wide = 0;
 		pixel_rgb_wide = 0;
+		speed_wide = 0;
 		version_wide = 0;
 		minwide = (72 * os_logical_wide) / 96;
 
@@ -11771,6 +11799,14 @@ static void _viv_status_update(void)
 					{
 						version_wide = 150;
 					}
+
+				if (*speed_buf)
+				{
+					if (GetTextExtentPoint32(hdc, speed_buf, string_length(speed_buf), &size))
+					{
+						speed_wide = size.cx + GetSystemMetrics(SM_CXEDGE) * 5;
+					}
+				}
 				}
 
 				if (GetTextExtentPoint32(hdc, dimension_buf, string_length(dimension_buf), &size))
@@ -11833,7 +11869,7 @@ static void _viv_status_update(void)
 			part_array[parti] = part_wide;
 			parti++;
 
-			part_wide = (rect.right - rect.left) - 120 - dimension_wide - frame_wide - preload_wide - pixel_pos_wide - pixel_rgb_wide;
+			part_wide = (rect.right - rect.left) - 120 - dimension_wide - frame_wide - preload_wide - pixel_pos_wide - pixel_rgb_wide - speed_wide;
 			if (part_wide < 0) part_wide = 0;
 			part_array[parti] = part_wide;
 			parti++;
@@ -11845,10 +11881,23 @@ static void _viv_status_update(void)
 				parti++;
 			}
 
+			if (speed_buf)
+			{
+				part_wide += speed_wide;
+				part_array[parti] = part_wide;
+				parti++;
+			}
+
 			if (pixel_pos_buf)
 			{
 				part_wide += pixel_pos_wide;
 				part_array[parti] = part_wide;
+				parti++;
+			}
+
+			if (speed_buf)
+			{
+				_viv_status_set(parti, speed_buf);
 				parti++;
 			}
 
