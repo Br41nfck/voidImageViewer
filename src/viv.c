@@ -534,6 +534,7 @@ static INT_PTR CALLBACK _viv_rename_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM
 static INT_PTR CALLBACK _viv_search_everything_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
 static INT_PTR CALLBACK _viv_options_toolbar_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+
 static DLGPROC _viv_options_page_procs[] = { 
 	_viv_options_general_proc,
 	_viv_options_view_proc,
@@ -553,6 +554,7 @@ static RECT _viv_fullscreen_rect;
 static ULONG_PTR os_GdiplusToken; // gdiplus handle
 static VIV_UINT64 _viv_animation_timer_tick_start = 0; // the current start tick
 static VIV_UINT64 _viv_timer_tick = 0; // the current tick for the current frame.
+static VIV_UINT64 _viv_init_start_tick = 0; // Program loading time
 static WIN32_FIND_DATA *_viv_frame_fd = 0; // the frame fd, may differ to the current fd because we change the title before the frames are loaded.
 static WIN32_FIND_DATA *_viv_last_fd = 0; // the last find data including the full path and filename.
 static WIN32_FIND_DATA *_viv_load_fd = 0; // the load fd
@@ -5831,6 +5833,7 @@ static int _viv_init(int nCmdShow)
 	int show_maximized;
 	DWORD window_style;
 	
+	_viv_init_start_tick = os_get_tick_count();
 	os_init();
 	show_maximized = 0;
 	
@@ -6161,6 +6164,11 @@ static int _viv_init(int nCmdShow)
 		ShowWindow(_viv_hwnd,SW_SHOW);
 		UpdateWindow(_viv_hwnd);
 	}
+
+	VIV_UINT64 elapsed = os_get_tick_count() - _viv_init_start_tick;
+	VIV_UINT64 freq = os_get_tick_freq();
+	unsigned int elapsed_ms = (unsigned int)((elapsed * 1000) / freq);
+	debug_printf("==================== APP INIT TIME: %u ms ==================== \n", elapsed_ms);
 
 	return 1;
 }

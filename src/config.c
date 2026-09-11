@@ -30,11 +30,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void _config_load_settings_by_location(const wchar_t *path,int is_root);
-static void _config_write_int(HANDLE h,const char *ascii_key,int value);
-static void _config_write_string(HANDLE h,const char *ascii_key,const wchar_t *s);
-static void _config_write_utf8(HANDLE h,const utf8_t *s);
-static void _config_save_settings_by_location(const wchar_t *path,int is_root);
+static void _config_load_settings_by_location(const wchar_t *path, int is_root);
+static void _config_write_int(HANDLE h, const char *ascii_key, int value);
+static void _config_write_string(HANDLE h, const char *ascii_key, const wchar_t *s);
+static void _config_write_utf8(HANDLE h, const utf8_t *s);
+static void _config_save_settings_by_location(const wchar_t *path, int is_root);
 
 BYTE config_allow_shrinking = 1; // prevent resizing an image below 100%
 BYTE config_appdata = 0; // Store settings in %APPDATA%\voidimageviewer instead of beside the executable.
@@ -104,6 +104,7 @@ int config_wide = 0; // Main window width; zero means calculate a default size.
 int config_x = 0; // Main window left position; zero means calculate a default position.
 int config_y = 0; // Main window top position; zero means calculate a default position.
 wchar_t config_last_location[CONFIG_LAST_LOCATION_SIZE] = L""; // Last opened file path.
+
 
 static void _config_load_settings_by_location(const wchar_t *path,int is_root)
 {
