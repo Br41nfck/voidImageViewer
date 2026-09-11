@@ -2430,9 +2430,18 @@ static void _viv_command_with_is_key_repeat(int command_id,int is_key_repeat)
 			break;
 			
 		case VIV_ID_VIEW_SLIDESHOW:
-
-			_viv_slideshow();
-						
+			if (_viv_is_slideshow)
+			{
+				_viv_pause();
+				if (_viv_is_fullscreen)
+				{
+					_viv_toggle_fullscreen();
+				}
+			}
+			else
+			{
+				_viv_slideshow();
+			}
 			break;
 			
 		case VIV_ID_VIEW_WINDOW_SIZE_50:
@@ -3782,8 +3791,8 @@ debug_printf("NEXT AFTER LOAD %S\n",fd->cFileName);
 						_viv_update_titlebar_visibility();
 					}
 				}
+				break;
 			}
-			break;
 		}
 			
 			switch(wParam)
@@ -3793,6 +3802,9 @@ debug_printf("NEXT AFTER LOAD %S\n",fd->cFileName);
 					break;
 
 				case VIV_ID_SLIDESHOW_TIMER:
+
+					// DEBUG:
+					debug_printf("SLIDESHPOW TIMER: fired, is slideshow=%d\n", _viv_is_slideshow);
 
 					if (_viv_is_slideshow)
 					{
@@ -7520,6 +7532,9 @@ debug_printf("toggle fullscreen %d\n",!_viv_is_fullscreen);
 
 static void _viv_slideshow(void)
 {
+	// DEBUG:
+	debug_printf("SLIDESHOW: enter, is_slideshow=%d, rate=%d\n", _viv_is_slideshow, config_slideshow_rate);
+
 	if (_viv_file_not_found)
 	{
 		return;

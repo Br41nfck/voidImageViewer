@@ -54,6 +54,7 @@
 - [ ] "Play All Instances" option
 - [X] Keep last image location
 - [X] File Viewer supported files in Options
+- [X] Fix Slideshow implementation
 
 ## IPC & Piping
 - [ ] Get image width/length via IPC
