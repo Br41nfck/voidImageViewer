@@ -6929,27 +6929,31 @@ static int _viv_is_msg(MSG *msg)
 					}
 */					
 					// cancel action
+					// cancel action
 					if ((key_flags == 0) && (msg->wParam == VK_ESCAPE))
 					{
 						if (_viv_doing)
 						{
 							_viv_doing_cancel();
-						
 							return 1;
 						}
 
 						if (_viv_is_fullscreen)
 						{
 							_viv_toggle_fullscreen();
-							
+
 							// also pause slideshow
 							if (_viv_is_slideshow)
 							{
 								_viv_pause();
 							}
-						
+
 							return 1;
 						}
+
+						// ESC as usual - exit program
+						_viv_exit();
+						return 1;
 					}
 					
 					// find the key.
