@@ -532,7 +532,15 @@ static INT_PTR CALLBACK _viv_options_view_proc(HWND hwnd, UINT msg, WPARAM wPara
 static void _viv_options_update_supported_files(HWND options_hwnd);
 static INT_PTR CALLBACK _viv_rename_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
 static INT_PTR CALLBACK _viv_search_everything_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
-static DLGPROC _viv_options_page_procs[] = { _viv_options_general_proc,_viv_options_view_proc,_viv_options_controls_proc };
+static INT_PTR CALLBACK _viv_options_toolbar_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+static DLGPROC _viv_options_page_procs[] = { 
+	_viv_options_general_proc,
+	_viv_options_view_proc,
+	_viv_options_controls_proc,
+	_viv_options_toolbar_proc 
+};
+
 static LARGE_INTEGER _viv_playlist_id = {0};
 static LRESULT (CALLBACK *_viv_old_status_proc)(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam) = NULL; // old status bar proc
 static LRESULT CALLBACK _viv_edit_key_edit_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
@@ -566,7 +574,14 @@ static _viv_reply_t *_viv_reply_add(DWORD type,DWORD size,void *data);
 static _viv_reply_t *_viv_reply_last = 0;
 static _viv_reply_t *_viv_reply_start = 0;
 static const char *_viv_get_copydata_string(const char *p,const char *e,wchar_t *buf,int bufsize);
-static const utf8_t *_viv_options_page_names[] = {"General","View","Controls"};
+
+static const utf8_t *_viv_options_page_names[] = {
+	"General",
+	"View",
+	"Controls",
+	"Toolbar"
+};
+
 static double _viv_view_ix = 0.0; // the current image offset in percent, used when resizing the window
 static double _viv_view_iy = 0.0; // the current image offset in percent, used when resizing the window
 static float *_viv_dst_zoom_values;
@@ -619,9 +634,28 @@ static int _viv_nav_compare(const _viv_nav_item_t *a,const _viv_nav_item_t *b);
 static int _viv_nav_item_count = 0;
 static int _viv_next(int prev,int reset_slideshow_timer,int is_preload,int wait_for_current_load);
 static int _viv_old_zoom_pos = 0; // restore this zoom level after leaving 1:1 mode.
-static int _viv_options_dialog_ids[] = {IDD_GENERAL,IDD_VIEW,IDD_CONTROLS};
-static int _viv_options_page_ids[] = {VIV_ID_OPTIONS_GENERAL,VIV_ID_OPTIONS_VIEW,VIV_ID_OPTIONS_CONTROLS};
-static int _viv_options_tab_ids[] = {IDC_TAB1,IDC_TAB2,IDC_TAB3};
+
+static int _viv_options_dialog_ids[] = {
+	IDD_GENERAL,
+	IDD_VIEW,
+	IDD_CONTROLS,
+	IDD_TOOLBAR
+};
+
+static int _viv_options_page_ids[] = {
+	VIV_ID_OPTIONS_GENERAL,
+	VIV_ID_OPTIONS_VIEW,
+	VIV_ID_OPTIONS_CONTROLS,
+	VIV_ID_OPTIONS_TOOLBAR
+};
+
+static int _viv_options_tab_ids[] = {
+	IDC_TAB1,
+	IDC_TAB2,
+	IDC_TAB3,
+	IDC_TAB4
+};
+
 static int _viv_pending_clear_frame_loaded_count = 0;
 static int _viv_playlist_count = 0;
 static int _viv_playlist_shuffle_allocated = 0;
@@ -8868,6 +8902,7 @@ static INT_PTR CALLBACK _viv_options_view_proc(HWND hwnd, UINT msg, WPARAM wPara
 
 	switch (msg)
 	{
+
 	case WM_INITDIALOG:
 	{
 		// Shrink blit mode
@@ -8903,7 +8938,7 @@ static INT_PTR CALLBACK _viv_options_view_proc(HWND hwnd, UINT msg, WPARAM wPara
 		os_ComboBox_AddString(hwnd, IDC_THEME_COMBO, (const utf8_t*)"Light");
 		os_ComboBox_AddString(hwnd, IDC_THEME_COMBO, (const utf8_t*)"Dark");
 		ComboBox_SetCurSel(GetDlgItem(hwnd, IDC_THEME_COMBO), config_theme);
-		
+
 		// Auto zoom type
 		os_ComboBox_AddString(hwnd, IDC_COMBO4, (const utf8_t*)"50%");
 		os_ComboBox_AddString(hwnd, IDC_COMBO4, (const utf8_t*)"100%");
@@ -8930,6 +8965,7 @@ static INT_PTR CALLBACK _viv_options_view_proc(HWND hwnd, UINT msg, WPARAM wPara
 		CheckDlgButton(hwnd, IDC_RETRACTABLE_TITLEBAR, config_retractable_titlebar ? BST_CHECKED : BST_UNCHECKED);
 		CheckDlgButton(hwnd, IDC_KEEP_LAST_LOCATION, config_keep_last_location ? BST_CHECKED : BST_UNCHECKED);
 		SetDlgItemInt(hwnd, IDC_IMAGE_BORDER_WIDTH, config_image_border_width, FALSE);
+
 		_viv_options_update_supported_files(GetParent(hwnd));
 
 		SetWindowLongPtr(GetDlgItem(hwnd, IDC_WINDOWEDBACKGROUNDCOLOR), GWLP_USERDATA,
@@ -8942,7 +8978,7 @@ static INT_PTR CALLBACK _viv_options_view_proc(HWND hwnd, UINT msg, WPARAM wPara
 
 		return FALSE;
 	}
-
+	
 	case WM_DESTROY:
 		_viv_delete_color_button_bitmap(GetDlgItem(hwnd, IDC_WINDOWEDBACKGROUNDCOLOR));
 		_viv_delete_color_button_bitmap(GetDlgItem(hwnd, IDC_FULLSCREENBACKGROUNDCOLOR));
@@ -9162,6 +9198,7 @@ static INT_PTR CALLBACK _viv_options_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARA
 					page_hwnd = CreateDialog(os_hinstance,MAKEINTRESOURCE(_viv_options_dialog_ids[i]),hwnd,_viv_options_page_procs[i]);
 					SetWindowLong(page_hwnd,GWL_ID,_viv_options_page_ids[i]);
 					
+					
 					if (os_EnableThemeDialogTexture)
 					{
 						os_EnableThemeDialogTexture(page_hwnd,ETDT_ENABLETAB);
@@ -9190,6 +9227,7 @@ static INT_PTR CALLBACK _viv_options_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARA
 						HWND general_page;
 						HWND view_page;
 						HWND controls_page;
+						HWND toolbar_page;
 						int old_shrink_blit_mode;
 						int exti;
 						COLORREF colorref;
@@ -9197,9 +9235,10 @@ static INT_PTR CALLBACK _viv_options_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARA
 						
 						params[0] = 0;
 						
-						general_page = GetDlgItem(hwnd,VIV_ID_OPTIONS_GENERAL);
-						view_page = GetDlgItem(hwnd,VIV_ID_OPTIONS_VIEW);
-						controls_page = GetDlgItem(hwnd,VIV_ID_OPTIONS_CONTROLS);
+						general_page = GetDlgItem(hwnd, VIV_ID_OPTIONS_GENERAL);
+						view_page = GetDlgItem(hwnd, VIV_ID_OPTIONS_VIEW);
+						controls_page = GetDlgItem(hwnd, VIV_ID_OPTIONS_CONTROLS);
+						toolbar_page = GetDlgItem(hwnd, VIV_ID_OPTIONS_TOOLBAR);
 						config_multiple_instances = 0;
 						
 						if (IsDlgButtonChecked(general_page,IDC_APPDATA) == BST_CHECKED) 
@@ -9340,6 +9379,21 @@ static INT_PTR CALLBACK _viv_options_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARA
 							}
 							config_image_border_width = (BYTE)image_border_width;
 						}
+
+						config_toolbar_buttons = 0;
+						if (IsDlgButtonChecked(toolbar_page, IDC_TOOLBAR_PREV) == BST_CHECKED) config_toolbar_buttons |= 0x01;
+						if (IsDlgButtonChecked(toolbar_page, IDC_TOOLBAR_NEXT) == BST_CHECKED) config_toolbar_buttons |= 0x02;
+						if (IsDlgButtonChecked(toolbar_page, IDC_TOOLBAR_PLAY) == BST_CHECKED) config_toolbar_buttons |= 0x04;
+						if (IsDlgButtonChecked(toolbar_page, IDC_TOOLBAR_PAUSE) == BST_CHECKED) config_toolbar_buttons |= 0x08;
+						if (IsDlgButtonChecked(toolbar_page, IDC_TOOLBAR_BESTFIT) == BST_CHECKED) config_toolbar_buttons |= 0x10;
+						if (IsDlgButtonChecked(toolbar_page, IDC_TOOLBAR_1TO1) == BST_CHECKED) config_toolbar_buttons |= 0x20;
+
+						if (_viv_toolbar_hwnd)
+						{
+							_viv_controls_show(0);
+							_viv_controls_show(1);
+						}
+
 						config_loop_animations_once = IsDlgButtonChecked(view_page,IDC_LOOP_ANIMATIONS_ONCE) == BST_CHECKED ? 1 : 0;
 						config_preload_next = IsDlgButtonChecked(view_page,IDC_PRELOAD_NEXT_IMAGE) == BST_CHECKED ? 1 : 0;
 						config_cache_last = IsDlgButtonChecked(view_page,IDC_CACHE_LAST_IMAGE) == BST_CHECKED ? 1 : 0;
@@ -9421,6 +9475,53 @@ static INT_PTR CALLBACK _viv_options_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARA
 static void _viv_options(void)
 {	
 	DialogBox(os_hinstance,MAKEINTRESOURCE(IDD_OPTIONS),_viv_hwnd,_viv_options_proc);
+}
+
+static INT_PTR CALLBACK _viv_options_toolbar_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	if ((msg >= WM_CTLCOLORMSGBOX && msg <= WM_CTLCOLORSTATIC) || msg == WM_CTLCOLORDLG)
+	{
+		LRESULT color = _viv_theme_ctlcolor(hwnd, msg, wParam, lParam);
+		if (color) return color;
+	}
+
+	switch (msg)
+	{
+
+	case WM_INITDIALOG:
+		CheckDlgButton(hwnd, IDC_TOOLBAR_PREV, (config_toolbar_buttons & 0x01) ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwnd, IDC_TOOLBAR_NEXT, (config_toolbar_buttons & 0x02) ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwnd, IDC_TOOLBAR_PLAY, (config_toolbar_buttons & 0x04) ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwnd, IDC_TOOLBAR_PAUSE, (config_toolbar_buttons & 0x08) ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwnd, IDC_TOOLBAR_BESTFIT, (config_toolbar_buttons & 0x10) ? BST_CHECKED : BST_UNCHECKED);
+		CheckDlgButton(hwnd, IDC_TOOLBAR_1TO1, (config_toolbar_buttons & 0x20) ? BST_CHECKED : BST_UNCHECKED);
+		return FALSE;
+
+	case WM_COMMAND:
+		switch (LOWORD(wParam))
+		{
+		case IDC_TOOLBAR_CHECKALL:
+			CheckDlgButton(hwnd, IDC_TOOLBAR_PREV, BST_CHECKED);
+			CheckDlgButton(hwnd, IDC_TOOLBAR_NEXT, BST_CHECKED);
+			CheckDlgButton(hwnd, IDC_TOOLBAR_PLAY, BST_CHECKED);
+			CheckDlgButton(hwnd, IDC_TOOLBAR_PAUSE, BST_CHECKED);
+			CheckDlgButton(hwnd, IDC_TOOLBAR_BESTFIT, BST_CHECKED);
+			CheckDlgButton(hwnd, IDC_TOOLBAR_1TO1, BST_CHECKED);
+			break;
+
+		case IDC_TOOLBAR_CHECKNONE:
+			CheckDlgButton(hwnd, IDC_TOOLBAR_PREV, BST_UNCHECKED);
+			CheckDlgButton(hwnd, IDC_TOOLBAR_NEXT, BST_UNCHECKED);
+			CheckDlgButton(hwnd, IDC_TOOLBAR_PLAY, BST_UNCHECKED);
+			CheckDlgButton(hwnd, IDC_TOOLBAR_PAUSE, BST_UNCHECKED);
+			CheckDlgButton(hwnd, IDC_TOOLBAR_BESTFIT, BST_UNCHECKED);
+			CheckDlgButton(hwnd, IDC_TOOLBAR_1TO1, BST_UNCHECKED);
+			break;
+		}
+		break;
+	}
+
+	return FALSE;
 }
 
 // use the default class description, ie: TXT File
@@ -10401,12 +10502,10 @@ static void _viv_update_frame(void)
 		// --- RETRACTABLE TITLE BAR ---
 #ifdef IDC_RETRACTABLE_TITLEBAR
 		if (config_retractable_titlebar) {
-			// Если включен retractable - принудительно убираем заголовок
 			newstyle &= ~(WS_CAPTION | WS_SYSMENU);
 			debug_printf("retractable: forced removing WS_CAPTION\n");
 		}
 		else {
-			// Иначе используем config_show_caption
 			if (config_show_caption) {
 				newstyle |= WS_CAPTION | WS_SYSMENU;
 			}
@@ -10422,8 +10521,6 @@ static void _viv_update_frame(void)
 			newstyle &= ~(WS_CAPTION | WS_SYSMENU);
 		}
 #endif
-		// -----------------------------
-
 
 		oldstyle = GetWindowLong(_viv_hwnd, GWL_STYLE);
 		newstyle = oldstyle;
@@ -11566,76 +11663,84 @@ static void _viv_controls_show(int show)
 
 			SendMessage(_viv_toolbar_hwnd,TB_SETIMAGELIST,0,(LPARAM)_viv_toolbar_image_list);
 
-			{
-				TBBUTTON buttons[8];
-				int buttoni;
+			{					
 				
-				buttoni = 0;
-	
-				buttons[buttoni].iBitmap = 0;
-				buttons[buttoni].idCommand = VIV_ID_NAV_PREV;
-				buttons[buttoni].fsState = TBSTATE_ENABLED;
-				buttons[buttoni].fsStyle = TBSTYLE_BUTTON;
-				buttons[buttoni].iString = (INT_PTR)L"Previous Image";
-				buttoni++;
-				
-				buttons[buttoni].iBitmap = 3;
-				buttons[buttoni].idCommand = VIV_ID_NAV_NEXT;
-				buttons[buttoni].fsState = TBSTATE_ENABLED;
-				buttons[buttoni].fsStyle = TBSTYLE_BUTTON;
-				buttons[buttoni].iString = (INT_PTR)L"Next Image";
-				buttoni++;
-	
-				buttons[buttoni].iBitmap = 0;
-				buttons[buttoni].idCommand = 0;
-				buttons[buttoni].fsState = 0;
-				buttons[buttoni].fsStyle = TBSTYLE_SEP;
-				buttons[buttoni].iString = 0;
-				buttoni++;
-				
-				buttons[buttoni].iBitmap = 1;
-				buttons[buttoni].idCommand = VIV_ID_SLIDESHOW_PLAY_ONLY;
-				buttons[buttoni].fsState = TBSTATE_ENABLED;
-				buttons[buttoni].fsStyle = TBSTYLE_BUTTON|TBSTYLE_CHECK|TBSTYLE_GROUP;
-				buttons[buttoni].iString = (INT_PTR)L"Play Slideshow";
-				buttoni++;
-	
-				buttons[buttoni].iBitmap = 2;
-				buttons[buttoni].idCommand = VIV_ID_SLIDESHOW_PAUSE_ONLY;
-				buttons[buttoni].fsState = TBSTATE_ENABLED;
-				buttons[buttoni].fsStyle = TBSTYLE_BUTTON|TBSTYLE_CHECK|TBSTYLE_GROUP;
-				buttons[buttoni].iString = (INT_PTR)L"Pause Slideshow";
-				buttoni++;
-	
-				buttons[buttoni].iBitmap = 0;
-				buttons[buttoni].idCommand = 0;
-				buttons[buttoni].fsState = 0;
-				buttons[buttoni].fsStyle = TBSTYLE_SEP;
-				buttons[buttoni].iString = 0;
-				buttoni++;
-					
-				buttons[buttoni].iBitmap = 4;
-				buttons[buttoni].idCommand = VIV_ID_VIEW_BESTFIT;
-				buttons[buttoni].fsState = TBSTATE_ENABLED;
-				buttons[buttoni].fsStyle = TBSTYLE_BUTTON;
-				buttons[buttoni].iString = (INT_PTR)L"Best Fit";
-				buttoni++;				
-					
-				buttons[buttoni].iBitmap = 5;
-				buttons[buttoni].idCommand = VIV_ID_VIEW_1TO1;
-				buttons[buttoni].fsState = TBSTATE_ENABLED;
-				buttons[buttoni].fsStyle = TBSTYLE_BUTTON;
-				buttons[buttoni].iString = (INT_PTR)L"Actual Size";
-				buttoni++;
-					
-				SendMessage(_viv_toolbar_hwnd,TB_ADDBUTTONS,8,(LPARAM)buttons);
+					TBBUTTON all_buttons[8];
+					TBBUTTON active_buttons[8];
+					int all_count = 0;
+					int active_count = 0;
+
+					// Prev
+					all_buttons[all_count].iBitmap = 0;
+					all_buttons[all_count].idCommand = VIV_ID_NAV_PREV;
+					all_buttons[all_count].fsState = TBSTATE_ENABLED;
+					all_buttons[all_count].fsStyle = TBSTYLE_BUTTON;
+					all_buttons[all_count].iString = (INT_PTR)L"Previous Image";
+					all_count++;
+
+					// Next
+					all_buttons[all_count].iBitmap = 3;
+					all_buttons[all_count].idCommand = VIV_ID_NAV_NEXT;
+					all_buttons[all_count].fsState = TBSTATE_ENABLED;
+					all_buttons[all_count].fsStyle = TBSTYLE_BUTTON;
+					all_buttons[all_count].iString = (INT_PTR)L"Next Image";
+					all_count++;
+
+					// Play
+					all_buttons[all_count].iBitmap = 1;
+					all_buttons[all_count].idCommand = VIV_ID_SLIDESHOW_PLAY_ONLY;
+					all_buttons[all_count].fsState = TBSTATE_ENABLED;
+					all_buttons[all_count].fsStyle = TBSTYLE_BUTTON | TBSTYLE_CHECK | TBSTYLE_GROUP;
+					all_buttons[all_count].iString = (INT_PTR)L"Play Slideshow";
+					all_count++;
+
+					// Pause
+					all_buttons[all_count].iBitmap = 2;
+					all_buttons[all_count].idCommand = VIV_ID_SLIDESHOW_PAUSE_ONLY;
+					all_buttons[all_count].fsState = TBSTATE_ENABLED;
+					all_buttons[all_count].fsStyle = TBSTYLE_BUTTON | TBSTYLE_CHECK | TBSTYLE_GROUP;
+					all_buttons[all_count].iString = (INT_PTR)L"Pause Slideshow";
+					all_count++;
+
+					// Best Fit
+					all_buttons[all_count].iBitmap = 4;
+					all_buttons[all_count].idCommand = VIV_ID_VIEW_BESTFIT;
+					all_buttons[all_count].fsState = TBSTATE_ENABLED;
+					all_buttons[all_count].fsStyle = TBSTYLE_BUTTON;
+					all_buttons[all_count].iString = (INT_PTR)L"Best Fit";
+					all_count++;
+
+					// 1:1
+					all_buttons[all_count].iBitmap = 5;
+					all_buttons[all_count].idCommand = VIV_ID_VIEW_1TO1;
+					all_buttons[all_count].fsState = TBSTATE_ENABLED;
+					all_buttons[all_count].fsStyle = TBSTYLE_BUTTON;
+					all_buttons[all_count].iString = (INT_PTR)L"Actual Size";
+					all_count++;
+
+					{
+						int i;
+						DWORD mask = 1;
+						int last_was_sep = 1;
+
+						for (i = 0; i < all_count; i++)
+						{
+							if (config_toolbar_buttons & mask)
+							{
+								active_buttons[active_count] = all_buttons[i];
+								active_count++;
+								last_was_sep = 0;
+							}
+							mask <<= 1;
+						}
+					}
+
+					SendMessage(_viv_toolbar_hwnd, TB_ADDBUTTONS, active_count, (LPARAM)active_buttons);
 			}
 
 			_viv_toolbar_update_buttons();
 			ShowWindow(_viv_toolbar_hwnd,SW_SHOW);
 					
-//			Toolba				
-//			TB_ADDBUTTONS();
 		}
 	}
 	else
@@ -15585,7 +15690,7 @@ static void _viv_stretch_blt(HDC dst_hdc,int dst_x,int dst_y,int dst_wide,int ds
 		clip_wide = (dst_x + dst_wide) - clip_x;
 	}
 	
-	if (clip_y + clip_high > dst_y + dst_high) 
+	if (clip_y + clip_high > dst_y + dst_high)
 	{
 		clip_high = (dst_y + dst_high) - clip_y;
 	}
@@ -15610,7 +15715,7 @@ static void _viv_stretch_blt(HDC dst_hdc,int dst_x,int dst_y,int dst_wide,int ds
 		if (dst_mem_hdc)
 		{
 			HBITMAP dst_hbitmap;
-
+			
 			dst_hbitmap = CreateCompatibleBitmap(dst_hdc,clip_wide,clip_high);
 			if (dst_hbitmap)
 			{

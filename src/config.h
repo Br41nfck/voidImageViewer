@@ -137,6 +137,7 @@ extern BYTE config_image_border_width; // Image border width in pixels; 0 disabl
 extern BYTE config_keep_last_location; // Restore the last opened file on startup.
 extern wchar_t config_last_location[CONFIG_LAST_LOCATION_SIZE]; // Last opened file path.
 extern BYTE config_log_mode; // 0 = console, 1 = file, 2 = both
+extern DWORD config_toolbar_buttons; // 1 = prev, 2 = next, 4 = play, 8 = pause, 16 = bestfit, 32 = 1 to 1 
 
 #ifdef __cplusplus
 }
