@@ -56,9 +56,10 @@ void mem_debug(void)
 {
 	mem_debug_t *start;
 	
+	// MEMORY DEBUG
 	// note: debug_printf can change the state of the memory.
 	
-	debug_printf("MEM_DEBUG_START (%d)\n",mem_debug_count);
+	//debug_printf("MEM_DEBUG_START (%d)\n",mem_debug_count);
 
 
 	EnterCriticalSection(&mem_debug_cs);
@@ -114,7 +115,7 @@ void mem_debug(void)
 		{
 			next_md = md->next;
 
-			debug_printf("%s(%d): %p: %d bytes\n",md->filename,md->line,md+1,md->size);
+			//debug_printf("%s(%d): %p: %d bytes\n",md->filename,md->line,md+1,md->size);
 
 			size += md->size;
 			
@@ -125,10 +126,10 @@ void mem_debug(void)
 			md = next_md;
 		}
 
-		debug_printf("Allocation count: %d\n",count);
-		debug_printf("Allocation size: %d\n",size);
-		debug_printf("Allocation heap size: %d\n",(int)mem_usage);
-		debug_printf("heap overhead: %d\n",(int)(mem_usage - size));
+		//debug_printf("Allocation count: %d\n",count);
+		//debug_printf("Allocation size: %d\n",size);
+		//debug_printf("Allocation heap size: %d\n",(int)mem_usage);
+		//debug_printf("heap overhead: %d\n",(int)(mem_usage - size));
 		
 		
 //DEBUG:	
@@ -300,7 +301,7 @@ void mem_free_debug(const char *file,int line,void *p)
 	if (!HeapFree(GetProcessHeap(),0,(((mem_debug_t *)p)-1)))
 	{
 		// not fatal
-		debug_printf("HeapFree(): %d: Failed to free %p.\n",GetLastError(),p);
+		//debug_printf("HeapFree(): %d: Failed to free %p.\n",GetLastError(),p);
 	}
 }
 

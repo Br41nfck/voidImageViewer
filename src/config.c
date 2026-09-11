@@ -381,7 +381,7 @@ void config_load_settings(void)
 	if (config_retractable_titlebar) 
 	{
 		config_show_caption = 0;
-		debug_printf("Retractable title bar enabled from config\n");
+		//debug_printf("Retractable title bar enabled from config\n");
 	}
 	else
 	{
@@ -389,18 +389,18 @@ void config_load_settings(void)
 		{
 			config_show_caption = 1;
 		}
-		debug_printf("Retractable title bar disabled from config\n");
+		//debug_printf("Retractable title bar disabled from config\n");
 	}
 
-	debug_printf("config_retractable_titlebar = %d\n", config_retractable_titlebar);
-	debug_printf("config_show_caption = %d\n", config_show_caption);
+	//debug_printf("config_retractable_titlebar = %d\n", config_retractable_titlebar);
+	//debug_printf("config_show_caption = %d\n", config_show_caption);
 }
 
 void config_apply_settings(void)
 {
 	if (config_retractable_titlebar) {
 		config_show_caption = 0;
-		debug_printf("Retractable title bar applied (show_caption disabled)\n");
+		//debug_printf("Retractable title bar applied (show_caption disabled)\n");
 	}
 }
 
