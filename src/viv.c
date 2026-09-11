@@ -1228,7 +1228,7 @@ const WORD _viv_association_dlg_item_id[] =
 static void _viv_options_update_supported_files(HWND options_hwnd)
 {
 	HWND general_page = GetDlgItem(options_hwnd, VIV_ID_OPTIONS_GENERAL);
-	HWND view_page = GetDlgItem(options_hwnd, VIV_ID_OPTIONS_VIEW);
+	HWND view_page = GetDlgItem(options_hwnd, VIV_ID_OPTIONS_GENERAL);
 	wchar_t text[STRING_SIZE];
 	int exti;
 	int first = 1;

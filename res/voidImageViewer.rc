@@ -43,18 +43,18 @@ BEGIN
 
     LTEXT           "Supported files:", IDC_SUPPORTED_FILES, 0, 50, 190, 16
 
-    GROUPBOX        "Associations", IDC_STATIC, 0, 62, 54, 124
-    CONTROL         "&BMP", IDC_BMP, "Button",BS_AUTOCHECKBOX     | WS_TABSTOP, 6, 74, 42, 10
-    CONTROL         "&GIF", IDC_GIF, "Button",BS_AUTOCHECKBOX     | WS_TABSTOP, 6, 86, 42, 10
-    CONTROL         "IC&O", IDC_ICO, "Button",BS_AUTOCHECKBOX     | WS_TABSTOP, 6, 98, 42, 10
-    CONTROL         "JP&EG", IDC_JPEG, "Button",BS_AUTOCHECKBOX   | WS_TABSTOP, 6, 110, 42, 10
-    CONTROL         "&JPG", IDC_JPG, "Button",BS_AUTOCHECKBOX     | WS_TABSTOP, 6, 122, 42, 10
-    CONTROL         "&PNG", IDC_PNG, "Button",BS_AUTOCHECKBOX     | WS_TABSTOP, 6, 134, 42, 10
-    CONTROL         "&TIF", IDC_TIF, "Button",BS_AUTOCHECKBOX     | WS_TABSTOP, 6, 146, 42 ,10
-    CONTROL         "TIF&F", IDC_TIFF, "Button",BS_AUTOCHECKBOX   | WS_TABSTOP, 6, 158, 42, 10
-    CONTROL         "&WEBP", IDC_WEBP, "Button",BS_AUTOCHECKBOX   | WS_TABSTOP, 6, 170, 42, 10
-    PUSHBUTTON      "Check &All", IDC_CHECKALL, 60, 60, 54, 14
-    PUSHBUTTON      "Check &None", IDC_CHECKNONE, 60, 78, 54, 14
+    GROUPBOX        "Associations", IDC_STATIC, 0, 72, 54, 124
+    CONTROL         "&BMP", IDC_BMP, "Button",BS_AUTOCHECKBOX     | WS_TABSTOP, 6, 84, 42, 10
+    CONTROL         "&GIF", IDC_GIF, "Button",BS_AUTOCHECKBOX     | WS_TABSTOP, 6, 96, 42, 10
+    CONTROL         "IC&O", IDC_ICO, "Button",BS_AUTOCHECKBOX     | WS_TABSTOP, 6, 108, 42, 10
+    CONTROL         "JP&EG", IDC_JPEG, "Button",BS_AUTOCHECKBOX   | WS_TABSTOP, 6, 120, 42, 10
+    CONTROL         "&JPG", IDC_JPG, "Button",BS_AUTOCHECKBOX     | WS_TABSTOP, 6, 132, 42, 10
+    CONTROL         "&PNG", IDC_PNG, "Button",BS_AUTOCHECKBOX     | WS_TABSTOP, 6, 144, 42, 10
+    CONTROL         "&TIF", IDC_TIF, "Button",BS_AUTOCHECKBOX     | WS_TABSTOP, 6, 156, 42 ,10
+    CONTROL         "TIF&F", IDC_TIFF, "Button",BS_AUTOCHECKBOX   | WS_TABSTOP, 6, 168, 42, 10
+    CONTROL         "&WEBP", IDC_WEBP, "Button",BS_AUTOCHECKBOX   | WS_TABSTOP, 6, 180, 42, 10
+    PUSHBUTTON      "Check &All", IDC_CHECKALL, 60, 166, 54, 14
+    PUSHBUTTON      "Check &None", IDC_CHECKNONE, 60, 182, 54, 14
 
     END
 
