@@ -27,6 +27,8 @@
 #include "string.h"
 #include "utf8.h"
 #include <Windows.h>
+#include <stdlib.h>
+#include <string.h>
 
 static void _config_load_settings_by_location(const wchar_t *path,int is_root);
 static void _config_write_int(HANDLE h,const char *ascii_key,int value);
@@ -34,74 +36,74 @@ static void _config_write_string(HANDLE h,const char *ascii_key,const wchar_t *s
 static void _config_write_utf8(HANDLE h,const utf8_t *s);
 static void _config_save_settings_by_location(const wchar_t *path,int is_root);
 
-BYTE config_appdata = 0; // Store settings in %APPDATA%\voidimageviewer instead of beside the executable.
-BYTE config_keep_centered = 1; // Keep the image pixel under the cursor when zooming out.
-int config_x = 0; // Main window left position; zero means calculate a default position.
-int config_y = 0; // Main window top position; zero means calculate a default position.
-int config_wide = 0; // Main window width; zero means calculate a default size.
-int config_high = 0; // Main window height; zero means calculate a default size.
-int config_slideshow_rate = 5000; // Slideshow interval in milliseconds.
-int config_auto_fit_wide_mul = 3; // Numerator used to calculate the default width from the monitor width.
-int config_auto_fit_wide_div = 5; // Denominator used to calculate the default width from the monitor width.
-int config_auto_fit_high_mul = 3; // Numerator used to calculate the default height from the monitor height.
-int config_auto_fit_high_div = 5; // Denominator used to calculate the default height from the monitor height.
-int config_short_jump = 500; // Short image navigation jump in pixels.
-int config_medium_jump = 1000; // Medium image navigation jump in pixels.
-int config_long_jump = 2000; // Long image navigation jump in pixels.
-BYTE config_maximized = 0; // Start the main window maximized.
-int config_slideshow_custom_rate = 3; // custom slideshow rate (see type below)
 BYTE config_allow_shrinking = 1; // prevent resizing an image below 100%
-BYTE config_shrink_blit_mode = CONFIG_SHRINK_BLIT_MODE_HALFTONE; // shrink filter
-BYTE config_mag_filter = CONFIG_MAG_FILTER_COLORONCOLOR; // magnify filter
-BYTE config_nav_sort = CONFIG_NAV_SORT_DATE_MODIFIED; // current navigation sort.
-BYTE config_nav_sort_ascending = 0; // sort navigation ascending or descending.
-BYTE config_keep_aspect_ratio = 1; // stretch images with the original aspect ratio.
-BYTE config_fill_window = 0; // stretch the image to fill the window
-BYTE config_fullscreen_fill_window = 1; // same as fill_window, except this setting is used when we are fullscreen
+BYTE config_appdata = 0; // Store settings in %APPDATA%\voidimageviewer instead of beside the executable.
 BYTE config_auto_zoom = 0; // automatically resize the window to fit the newly loaded image
 BYTE config_auto_zoom_type = 1; // 0 = 50%, 1 = 100%, 2 = 200%
-BYTE config_frame_minus = 0; // show frame counter or remaining frames in status bar
-BYTE config_multiple_instances = 0; // all multiple instances or use a single instance.
-BYTE config_show_status = 1; // Show the status bar.
-BYTE config_show_controls = 1; // Show the playback and navigation controls.
-BYTE config_prevent_sleep = 1; // Prevent the system from sleeping during playback.
-BYTE config_loop_animations_once = 1; // Play animated images at least once in a slideshow.
-BYTE config_mouse_wheel_action = 0; // Action for the mouse wheel: 0 zoom, 1 next/previous, 2 previous/next.
-BYTE config_ctrl_mouse_wheel_action = 0; // Action for Ctrl+mouse wheel: 0 zoom, 1 next/previous, 2 previous/next.
-BYTE config_left_click_action = 0; // Left-click action: 0 scroll, 1 slideshow, 2 animation, 3 zoom in, 4 next, 5 1:1 scroll, 6 move window.
-BYTE config_right_click_action = 0; // Right-click action: 0 context menu, 1 zoom out, 2 previous.
-BYTE config_xbutton_action = 2; // X-button action: 1 zoom, 2 next.
-BYTE config_windowed_background_color_r = 255; // Red component of the windowed image background.
-BYTE config_windowed_background_color_g = 255; // Green component of the windowed image background.
-BYTE config_windowed_background_color_b = 255; // Blue component of the windowed image background.
-BYTE config_fullscreen_background_color_r = 0; // Red component of the fullscreen image background.
-BYTE config_fullscreen_background_color_g = 0; // Green component of the fullscreen image background.
-BYTE config_fullscreen_background_color_b = 0; // Blue component of the fullscreen image background.
-BYTE config_options_last_page = 0; // Last selected Options page.
-BYTE config_shuffle = 0; // Shuffle image navigation.
 BYTE config_browse_file_open_dialog = 1; // Browse to the selected file after opening it.
-BYTE config_ontop = 0; // Keep on top mode: 0 never, 1 always, 2 during slideshow or animation.
-BYTE config_slideshow_custom_rate_type = 1; // 0 = milliseconds, 1 = seconds, 2 = minutes
-BYTE config_scroll_window = 1; // Scroll the image when it is larger than the window.
-BYTE config_preload_next = 1; // Preload the next image during navigation.
 BYTE config_cache_last = 1; // Keep the last decoded image in memory.
+BYTE config_ctrl_mouse_wheel_action = 0; // Action for Ctrl+mouse wheel: 0 zoom, 1 next/previous, 2 previous/next.
+BYTE config_fill_window = 0; // stretch the image to fill the window
+BYTE config_frame_minus = 0; // show frame counter or remaining frames in status bar
+BYTE config_fullscreen_background_color_b = 0; // Blue component of the fullscreen image background.
+BYTE config_fullscreen_background_color_g = 0; // Green component of the fullscreen image background.
+BYTE config_fullscreen_background_color_r = 0; // Red component of the fullscreen image background.
+BYTE config_fullscreen_fill_window = 1; // same as fill_window, except this setting is used when we are fullscreen
 BYTE config_icm = 1; // Use Image Color Management when rendering.
-BYTE config_show_menu = 1; // Show the application menu.
-BYTE config_show_caption = 1; // Show the standard title bar.
-BYTE config_show_thickframe = 1; // Allow resizing through the thick window frame.
-BYTE config_toolbar_move_window = 1; // Allow moving the window by dragging the toolbar.
-BYTE config_windowed_hide_cursor = 1; // Hide the cursor over the image in windowed mode.
-BYTE config_pixel_info = 0; // Show pixel information in the status bar.
-BYTE config_orientation = 1; // Apply the image orientation metadata.
-BYTE config_title_bar_format = 1; // Title format: 0 full path, 1 filename, 2 none.
-BYTE config_retractable_titlebar = 0; // Replace the standard title bar with a retractable one.
-BYTE config_theme = CONFIG_THEME_SYSTEM; // Application theme: 0 system, 1 light, 2 dark.
 BYTE config_image_border_width = 1; // Image border width in pixels; 0 disables the border.
+BYTE config_keep_aspect_ratio = 1; // stretch images with the original aspect ratio.
+BYTE config_keep_centered = 1; // Keep the image pixel under the cursor when zooming out.
 BYTE config_keep_last_location = 1; // Restore the last opened file on startup.
-wchar_t config_last_location[CONFIG_LAST_LOCATION_SIZE] = L""; // Last opened file path.
-BYTE config_log_mode = CONFIG_LOG_CONSOLE; // Logging destination: 0 console, 1 file, 2 both.
-DWORD config_toolbar_buttons = 0x3F; // Default buttons
 BYTE config_keep_window_aspect = 0; // 0 - disable, 1 - enable 
+BYTE config_left_click_action = 0; // Left-click action: 0 scroll, 1 slideshow, 2 animation, 3 zoom in, 4 next, 5 1:1 scroll, 6 move window.
+BYTE config_log_mode = CONFIG_LOG_CONSOLE; // Logging destination: 0 console, 1 file, 2 both.
+BYTE config_loop_animations_once = 1; // Play animated images at least once in a slideshow.
+BYTE config_mag_filter = CONFIG_MAG_FILTER_COLORONCOLOR; // magnify filter
+BYTE config_maximized = 0; // Start the main window maximized.
+BYTE config_mouse_wheel_action = 0; // Action for the mouse wheel: 0 zoom, 1 next/previous, 2 previous/next.
+BYTE config_multiple_instances = 0; // all multiple instances or use a single instance.
+BYTE config_nav_sort = CONFIG_NAV_SORT_DATE_MODIFIED; // current navigation sort.
+BYTE config_nav_sort_ascending = 0; // sort navigation ascending or descending.
+BYTE config_ontop = 0; // Keep on top mode: 0 never, 1 always, 2 during slideshow or animation.
+BYTE config_options_last_page = 0; // Last selected Options page.
+BYTE config_orientation = 1; // Apply the image orientation metadata.
+BYTE config_pixel_info = 0; // Show pixel information in the status bar.
+BYTE config_preload_next = 1; // Preload the next image during navigation.
+BYTE config_prevent_sleep = 1; // Prevent the system from sleeping during playback.
+BYTE config_retractable_titlebar = 0; // Replace the standard title bar with a retractable one.
+BYTE config_right_click_action = 0; // Right-click action: 0 context menu, 1 zoom out, 2 previous.
+BYTE config_scroll_window = 1; // Scroll the image when it is larger than the window.
+BYTE config_show_caption = 1; // Show the standard title bar.
+BYTE config_show_controls = 1; // Show the playback and navigation controls.
+BYTE config_show_menu = 1; // Show the application menu.
+BYTE config_show_status = 1; // Show the status bar.
+BYTE config_show_thickframe = 1; // Allow resizing through the thick window frame.
+BYTE config_shrink_blit_mode = CONFIG_SHRINK_BLIT_MODE_HALFTONE; // shrink filter
+BYTE config_shuffle = 0; // Shuffle image navigation.
+BYTE config_slideshow_custom_rate_type = 1; // 0 = milliseconds, 1 = seconds, 2 = minutes
+BYTE config_theme = CONFIG_THEME_SYSTEM; // Application theme: 0 system, 1 light, 2 dark.
+BYTE config_title_bar_format = 1; // Title format: 0 full path, 1 filename, 2 none.
+BYTE config_toolbar_move_window = 1; // Allow moving the window by dragging the toolbar.
+BYTE config_windowed_background_color_b = 255; // Blue component of the windowed image background.
+BYTE config_windowed_background_color_g = 255; // Green component of the windowed image background.
+BYTE config_windowed_background_color_r = 255; // Red component of the windowed image background.
+BYTE config_windowed_hide_cursor = 1; // Hide the cursor over the image in windowed mode.
+BYTE config_xbutton_action = 2; // X-button action: 1 zoom, 2 next.
+DWORD config_toolbar_buttons = 0x3F; // Default buttons
+int config_auto_fit_high_div = 5; // Denominator used to calculate the default height from the monitor height.
+int config_auto_fit_high_mul = 3; // Numerator used to calculate the default height from the monitor height.
+int config_auto_fit_wide_div = 5; // Denominator used to calculate the default width from the monitor width.
+int config_auto_fit_wide_mul = 3; // Numerator used to calculate the default width from the monitor width.
+int config_high = 0; // Main window height; zero means calculate a default size.
+int config_long_jump = 2000; // Long image navigation jump in pixels.
+int config_medium_jump = 1000; // Medium image navigation jump in pixels.
+int config_short_jump = 500; // Short image navigation jump in pixels.
+int config_slideshow_custom_rate = 3; // custom slideshow rate (see type below)
+int config_slideshow_rate = 5000; // Slideshow interval in milliseconds.
+int config_wide = 0; // Main window width; zero means calculate a default size.
+int config_x = 0; // Main window left position; zero means calculate a default position.
+int config_y = 0; // Main window top position; zero means calculate a default position.
+wchar_t config_last_location[CONFIG_LAST_LOCATION_SIZE] = L""; // Last opened file path.
 
 static void _config_load_settings_by_location(const wchar_t *path,int is_root)
 {
@@ -257,6 +259,108 @@ static void _config_load_settings_by_location(const wchar_t *path,int is_root)
 	}
 }
 
+static int _config_line_compare(const void* a, const void* b)
+{
+	return strcmp(*(const char**)a, *(const char**)b);
+}
+
+static void _config_sort_ini_file(const wchar_t* filename)
+{
+	HANDLE h;
+	DWORD size;
+	DWORD numread;
+	char* buf;
+	char** lines;
+	int line_count;
+	int line_allocated;
+	int i;
+	char* p;
+	char* line_start;
+
+	h = CreateFileW(filename, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+	if (h == INVALID_HANDLE_VALUE) return;
+
+	size = GetFileSize(h, 0);
+	if (size == 0 || size == INVALID_FILE_SIZE)
+	{
+		CloseHandle(h);
+		return;
+	}
+
+	buf = (char*)malloc(size + 1);
+	if (!buf)
+	{
+		CloseHandle(h);
+		return;
+	}
+
+	if (!ReadFile(h, buf, size, &numread, 0))
+	{
+		free(buf);
+		CloseHandle(h);
+		return;
+	}
+	buf[size] = 0;
+	CloseHandle(h);
+
+	lines = NULL;
+	line_count = 0;
+	line_allocated = 0;
+	line_start = buf;
+
+	for (p = buf; ; p++)
+	{
+		if (*p == '\n' || *p == 0)
+		{
+			char saved = *p;
+			*p = 0;
+
+			if (p > line_start && *(p - 1) == '\r')
+			{
+				*(p - 1) = 0;
+			}
+
+			if (*line_start != 0 && *line_start != '[')
+			{
+				if (line_count + 1 > line_allocated)
+				{
+					line_allocated = line_allocated ? line_allocated * 2 : 64;
+					lines = (char**)realloc(lines, line_allocated * sizeof(char*));
+				}
+				lines[line_count] = line_start;
+				line_count++;
+			}
+
+			if (saved == 0) break;
+			line_start = p + 1;
+		}
+	}
+
+	if (line_count > 1)
+	{
+		qsort(lines, line_count, sizeof(char*), _config_line_compare);
+	}
+
+	h = CreateFileW(filename, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+	if (h != INVALID_HANDLE_VALUE)
+	{
+		DWORD written;
+		const char* header = "[voidImageViewer]\r\n";
+		WriteFile(h, header, (DWORD)strlen(header), &written, 0);
+
+		for (i = 0; i < line_count; i++)
+		{
+			WriteFile(h, lines[i], (DWORD)strlen(lines[i]), &written, 0);
+			WriteFile(h, "\r\n", 2, &written, 0);
+		}
+
+		CloseHandle(h);
+	}
+
+	free(lines);
+	free(buf);
+}
+
 void config_load_settings(void)
 {
 	wchar_t path[STRING_SIZE];
@@ -327,6 +431,7 @@ static void _config_write_utf8(HANDLE h,const utf8_t *s)
 	WriteFile(h, s, utf8_length(s), &num_written, 0);
 }
 
+// VoidImageViewer.ini - settings file 
 static void _config_save_settings_by_location(const wchar_t *path, int is_root)
 {
 	HANDLE h;
@@ -349,13 +454,6 @@ static void _config_save_settings_by_location(const wchar_t *path, int is_root)
 		}
 		else
 		{
-			_config_write_int(h, "image_border_width", config_image_border_width);
-			_config_write_int(h, "keep_last_location", config_keep_last_location);
-			_config_write_int(h, "keep_window_aspect", config_keep_window_aspect);
-			_config_write_int(h, "log_mode", config_log_mode);
-			_config_write_int(h, "retractable_titlebar", config_retractable_titlebar);
-			_config_write_int(h, "theme", config_theme);
-			_config_write_int(h, "toolbar_buttons", config_toolbar_buttons);
 			_config_write_int(h, "allow_shrinking", config_allow_shrinking);
 			_config_write_int(h, "auto_fit_high_div", config_auto_fit_high_div);
 			_config_write_int(h, "auto_fit_high_mul", config_auto_fit_high_mul);
@@ -374,9 +472,13 @@ static void _config_save_settings_by_location(const wchar_t *path, int is_root)
 			_config_write_int(h, "fullscreen_fill_window", config_fullscreen_fill_window);
 			_config_write_int(h, "high", config_high);
 			_config_write_int(h, "icm", config_icm);
+			_config_write_int(h, "image_border_width", config_image_border_width);
 			_config_write_int(h, "keep_aspect_ratio", config_keep_aspect_ratio);
 			_config_write_int(h, "keep_centered", config_keep_centered);
+			_config_write_int(h, "keep_last_location", config_keep_last_location);
+			_config_write_int(h, "keep_window_aspect", config_keep_window_aspect);
 			_config_write_int(h, "left_click_action", config_left_click_action);
+			_config_write_int(h, "log_mode", config_log_mode);
 			_config_write_int(h, "long_jump", config_long_jump);
 			_config_write_int(h, "loop_animations_once", config_loop_animations_once);
 			_config_write_int(h, "mag_filter", config_mag_filter);
@@ -389,6 +491,7 @@ static void _config_save_settings_by_location(const wchar_t *path, int is_root)
 			_config_write_int(h, "orientation", config_orientation);
 			_config_write_int(h, "preload_next", config_preload_next);
 			_config_write_int(h, "prevent_sleep", config_prevent_sleep);
+			_config_write_int(h, "retractable_titlebar", config_retractable_titlebar);
 			_config_write_int(h, "right_click_action", config_right_click_action);
 			_config_write_int(h, "scroll_window", config_scroll_window);
 			_config_write_int(h, "short_jump", config_short_jump);
@@ -405,7 +508,9 @@ static void _config_save_settings_by_location(const wchar_t *path, int is_root)
 			_config_write_int(h, "sort", config_nav_sort);
 			_config_write_int(h, "sort_ascending", config_nav_sort_ascending);
 			_config_write_int(h, "statusbar_pixel_info", config_pixel_info);
+			_config_write_int(h, "theme", config_theme);
 			_config_write_int(h, "title_bar_format", config_title_bar_format);
+			_config_write_int(h, "toolbar_buttons", config_toolbar_buttons);
 			_config_write_int(h, "toolbar_move_window", config_toolbar_move_window);
 			_config_write_int(h, "wide", config_wide);
 			_config_write_int(h, "windowed_background_color_b", config_windowed_background_color_b);
@@ -481,20 +586,29 @@ void config_save_settings(int appdata)
 		if (string_get_appdata_path(path))
 		{
 			wchar_t appdata_wbuf[STRING_SIZE];
-			
-			string_path_combine_utf8(appdata_wbuf,path,(const utf8_t *)"voidImageViewer");
-			
+
+			string_path_combine_utf8(appdata_wbuf, path, (const utf8_t*)"voidImageViewer");
+
 			CreateDirectory(appdata_wbuf, NULL);
 
 			_config_save_settings_by_location(appdata_wbuf, 0);
+			{
+				wchar_t ini_path[STRING_SIZE];
+				string_path_combine_utf8(ini_path, appdata_wbuf, (const utf8_t*)"voidImageViewer.ini");
+				_config_sort_ini_file(ini_path);
+			}
 		}
 	}
 	else
 	{
 		wchar_t path[STRING_SIZE];
-		
+		wchar_t ini_path[STRING_SIZE];
+
 		string_get_exe_path(path);
-		
-		_config_save_settings_by_location(path,1);
+
+		_config_save_settings_by_location(path, 1);
+
+		string_path_combine_utf8(ini_path, path, (const utf8_t*)"voidImageViewer.ini");
+		_config_sort_ini_file(ini_path);
 	}
 }

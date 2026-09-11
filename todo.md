@@ -102,3 +102,4 @@
 - [ ] Therube note: folder loading behavior with wildcards
 - [X] Logging to file (config option: console, file, both)
 - [X] Autoincrement version after successced build
+- [X] Sort settings in config file
