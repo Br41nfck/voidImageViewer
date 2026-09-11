@@ -101,6 +101,7 @@ BYTE config_keep_last_location = 1; // Restore the last opened file on startup.
 wchar_t config_last_location[CONFIG_LAST_LOCATION_SIZE] = L""; // Last opened file path.
 BYTE config_log_mode = CONFIG_LOG_CONSOLE; // Logging destination: 0 console, 1 file, 2 both.
 DWORD config_toolbar_buttons = 0x3F; // Default buttons
+BYTE config_keep_window_aspect = 0; // 0 - disable, 1 - enable 
 
 static void _config_load_settings_by_location(const wchar_t *path,int is_root)
 {
@@ -131,6 +132,7 @@ static void _config_load_settings_by_location(const wchar_t *path,int is_root)
 		config_high =							ini_get_int(ini, (const utf8_t *)"high",							config_high);
 		config_icm =							ini_get_int(ini, (const utf8_t *)"icm",								config_icm);
 		config_keep_aspect_ratio =				ini_get_int(ini, (const utf8_t *)"keep_aspect_ratio",				config_keep_aspect_ratio);
+		config_keep_window_aspect =				ini_get_int(ini, (const utf8_t *)"keep_window_aspect",				config_keep_window_aspect);
 		config_keep_centered =					ini_get_int(ini, (const utf8_t *)"keep_centered",					config_keep_centered);
 		config_left_click_action =				ini_get_int(ini, (const utf8_t *)"left_click_action",				config_left_click_action);
 		config_long_jump =						ini_get_int(ini, (const utf8_t *)"long_jump",						config_long_jump);
@@ -349,6 +351,7 @@ static void _config_save_settings_by_location(const wchar_t *path, int is_root)
 		{
 			_config_write_int(h, "image_border_width", config_image_border_width);
 			_config_write_int(h, "keep_last_location", config_keep_last_location);
+			_config_write_int(h, "keep_window_aspect", config_keep_window_aspect);
 			_config_write_int(h, "log_mode", config_log_mode);
 			_config_write_int(h, "retractable_titlebar", config_retractable_titlebar);
 			_config_write_int(h, "theme", config_theme);

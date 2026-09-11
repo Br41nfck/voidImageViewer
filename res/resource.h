@@ -102,6 +102,7 @@
 #define IDC_TOOLBAR_1TO1					1063
 #define IDC_TOOLBAR_CHECKALL				1064
 #define IDC_TOOLBAR_CHECKNONE				1065
+#define IDC_KEEP_WINDOW_ASPECT				1066
 
 #define IDD_TOOLBAR							2001
 #define VIV_ID_OPTIONS_TOOLBAR				2002
@@ -116,7 +117,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        130
 #define _APS_NEXT_COMMAND_VALUE         40048
-#define _APS_NEXT_CONTROL_VALUE         1058
+#define _APS_NEXT_CONTROL_VALUE         1067
 #define _APS_NEXT_SYMED_VALUE           109
 #endif
 #endif

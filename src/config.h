@@ -138,6 +138,7 @@ extern BYTE config_keep_last_location; // Restore the last opened file on startu
 extern wchar_t config_last_location[CONFIG_LAST_LOCATION_SIZE]; // Last opened file path.
 extern BYTE config_log_mode; // 0 = console, 1 = file, 2 = both
 extern DWORD config_toolbar_buttons; // 1 = prev, 2 = next, 4 = play, 8 = pause, 16 = bestfit, 32 = 1 to 1 
+extern BYTE config_keep_window_aspect; // 0 - disable, 1 - enable
 
 #ifdef __cplusplus
 }

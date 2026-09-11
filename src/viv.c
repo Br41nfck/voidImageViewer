@@ -3230,7 +3230,102 @@ static LRESULT CALLBACK _viv_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam
 			// don't free the menu again.
 			_viv_hmenu = 0;
 			break;
-			
+
+		case WM_SIZING:
+		{
+			if (config_keep_window_aspect && (_viv_image_wide > 0) && (_viv_image_high > 0))
+			{
+				RECT* rect = (RECT*)lParam;
+				int new_wide = rect->right - rect->left;
+				int new_high = rect->bottom - rect->top;
+
+				int extra_wide = 0;
+				int extra_high = 0;
+
+				{
+					RECT adjust;
+					adjust.left = 0;
+					adjust.top = 0;
+					adjust.right = 0;
+					adjust.bottom = 0;
+					AdjustWindowRectEx(&adjust, GetWindowLong(hwnd, GWL_STYLE),
+						GetMenu(hwnd) ? TRUE : FALSE, GetWindowLong(hwnd, GWL_EXSTYLE));
+
+					extra_wide = (adjust.right - adjust.left);
+					extra_high = (adjust.bottom - adjust.top);
+				}
+
+				// client area
+				int client_wide = new_wide - extra_wide;
+				int client_high = new_high - extra_high - _viv_get_status_high() - _viv_get_controls_high();
+
+				if (client_wide > 0 && client_high > 0)
+				{
+					double aspect = (double)_viv_image_wide / (double)_viv_image_high;
+
+					switch (wParam)
+					{
+					case WMSZ_TOP:
+					case WMSZ_BOTTOM:
+					{
+						client_wide = (int)(client_high * aspect + 0.5);
+						new_wide = client_wide + extra_wide;
+						rect->right = rect->left + new_wide;
+					}
+					break;
+
+					case WMSZ_LEFT:
+					case WMSZ_RIGHT:
+					{
+						client_high = (int)(client_wide / aspect + 0.5);
+						new_high = client_high + extra_high + _viv_get_status_high() + _viv_get_controls_high();
+						rect->bottom = rect->top + new_high;
+					}
+					break;
+
+					case WMSZ_TOPLEFT:
+					case WMSZ_TOPRIGHT:
+					case WMSZ_BOTTOMLEFT:
+					case WMSZ_BOTTOMRIGHT:
+					{
+						if (abs(new_wide) > abs(new_high))
+						{
+							client_high = (int)(client_wide / aspect + 0.5);
+							new_high = client_high + extra_high + _viv_get_status_high() + _viv_get_controls_high();
+						}
+						else
+						{
+							client_wide = (int)(client_high * aspect + 0.5);
+							new_wide = client_wide + extra_wide;
+						}
+
+						switch (wParam)
+						{
+						case WMSZ_TOPLEFT:
+							rect->right = rect->left + new_wide;
+							rect->bottom = rect->top + new_high;
+							break;
+						case WMSZ_TOPRIGHT:
+							rect->left = rect->right - new_wide;
+							rect->bottom = rect->top + new_high;
+							break;
+						case WMSZ_BOTTOMLEFT:
+							rect->right = rect->left + new_wide;
+							rect->top = rect->bottom - new_high;
+							break;
+						case WMSZ_BOTTOMRIGHT:
+							rect->left = rect->right - new_wide;
+							rect->top = rect->bottom - new_high;
+							break;
+						}
+					}
+					break;
+					}
+				}
+			}
+			break;
+		}
+
 		case WM_QUERYENDSESSION:
 			return TRUE;
 
@@ -8948,6 +9043,9 @@ static INT_PTR CALLBACK _viv_options_view_proc(HWND hwnd, UINT msg, WPARAM wPara
 		ComboBox_SetCurSel(GetDlgItem(hwnd, IDC_COMBO4), config_auto_zoom_type);
 		EnableWindow(GetDlgItem(hwnd, IDC_COMBO4), IsDlgButtonChecked(hwnd, IDC_AUTO_ZOOM) == BST_CHECKED);
 
+		// Keep Window Aspect
+		CheckDlgButton(hwnd, IDC_KEEP_WINDOW_ASPECT, config_keep_window_aspect ? BST_CHECKED : BST_UNCHECKED);
+
 		{
 			HWND combo = GetDlgItem(hwnd, IDC_TITLE_BAR_FORMAT_COMBO);
 			if (combo)
@@ -9382,6 +9480,7 @@ static INT_PTR CALLBACK _viv_options_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARA
 						}
 
 						config_toolbar_buttons = 0;
+						
 						if (IsDlgButtonChecked(toolbar_page, IDC_TOOLBAR_PREV) == BST_CHECKED) config_toolbar_buttons |= 0x01;
 						if (IsDlgButtonChecked(toolbar_page, IDC_TOOLBAR_NEXT) == BST_CHECKED) config_toolbar_buttons |= 0x02;
 						if (IsDlgButtonChecked(toolbar_page, IDC_TOOLBAR_PLAY) == BST_CHECKED) config_toolbar_buttons |= 0x04;
@@ -9395,11 +9494,13 @@ static INT_PTR CALLBACK _viv_options_proc(HWND hwnd,UINT msg,WPARAM wParam,LPARA
 							_viv_controls_show(1);
 						}
 
-						config_loop_animations_once = IsDlgButtonChecked(view_page,IDC_LOOP_ANIMATIONS_ONCE) == BST_CHECKED ? 1 : 0;
-						config_preload_next = IsDlgButtonChecked(view_page,IDC_PRELOAD_NEXT_IMAGE) == BST_CHECKED ? 1 : 0;
-						config_cache_last = IsDlgButtonChecked(view_page,IDC_CACHE_LAST_IMAGE) == BST_CHECKED ? 1 : 0;
-						config_keep_last_location = IsDlgButtonChecked(view_page, IDC_KEEP_LAST_LOCATION) == BST_CHECKED ? 1 : 0;
-						config_retractable_titlebar = IsDlgButtonChecked(view_page, IDC_RETRACTABLE_TITLEBAR) == BST_CHECKED;
+						config_cache_last =				IsDlgButtonChecked(view_page, IDC_CACHE_LAST_IMAGE) == BST_CHECKED ? 1 : 0;
+						config_keep_last_location =		IsDlgButtonChecked(view_page, IDC_KEEP_LAST_LOCATION) == BST_CHECKED ? 1 : 0;
+						config_keep_window_aspect =		IsDlgButtonChecked(view_page, IDC_KEEP_WINDOW_ASPECT) == BST_CHECKED ? 1 : 0;
+						config_loop_animations_once =	IsDlgButtonChecked(view_page, IDC_LOOP_ANIMATIONS_ONCE) == BST_CHECKED ? 1 : 0;
+						config_preload_next =			IsDlgButtonChecked(view_page, IDC_PRELOAD_NEXT_IMAGE) == BST_CHECKED ? 1 : 0;
+						config_retractable_titlebar =	IsDlgButtonChecked(view_page, IDC_RETRACTABLE_TITLEBAR) == BST_CHECKED;
+
 						InvalidateRect(_viv_hwnd, 0, FALSE);
 
 						debug_printf("config_retractable_titlebar = %d\n", config_retractable_titlebar);
