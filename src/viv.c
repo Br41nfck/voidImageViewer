@@ -1319,8 +1319,14 @@ static void _viv_copy_display_area(void)
 	if (wide <= 0 || high <= 0) return;
 
 	_viv_get_render_size(&rw, &rh);
+
+	// DEBUG:
+	debug_printf("ZOOM CALC: zoom_pos=%d dst_x=%d dst_y=%d rw=%d rh=%d img_w=%d img_h=%d\n", _viv_zoom_pos, _viv_dst_zoom_x_pos, _viv_dst_zoom_y_pos, rw, rh, _viv_image_wide, _viv_image_high);
+	
 	rw = (int)(rw * _viv_dst_zoom_values[_viv_dst_zoom_x_pos]);
 	rh = (int)(rh * _viv_dst_zoom_values[_viv_dst_zoom_y_pos]);
+	// DEBUG:
+	debug_printf("ZOOM AFTER DST: rw=%d rh=%d\n", rw, rh);
 
 	rx = (((_viv_dst_pos_x - 250) * (wide * 2)) / 1000) - (rw / 2) - _viv_view_x;
 	ry = (((_viv_dst_pos_y - 250) * (high * 2)) / 1000) - (rh / 2) - _viv_view_y;
@@ -7269,6 +7275,7 @@ static void _viv_view_set(int view_x,int view_y,int invalidate)
 debug_printf("SETVIEW %d %d ix %d iy %d rw %d rh %d wide %d high %d\n",_viv_view_x,_viv_view_y,(int)(_viv_view_ix),(int)(_viv_view_iy),rw,rh,wide,high);
 
 	_viv_toolbar_update_buttons();
+	_viv_status_update();
 }
 
 static void _viv_toggle_fullscreen(void)
@@ -11871,7 +11878,7 @@ static void _viv_status_update(void)
 {
 	if (_viv_status_hwnd)
 	{
-		int part_array[9];
+		int part_array[10];
 		RECT rect;
 		wchar_t widebuf[STRING_SIZE];
 		wchar_t highbuf[STRING_SIZE];
@@ -11881,6 +11888,7 @@ static void _viv_status_update(void)
 		wchar_t pixel_rgb_buf[STRING_SIZE];
 		wchar_t speed_buf[STRING_SIZE];
 		wchar_t load_time_buf[STRING_SIZE];
+		wchar_t zoom_buf[STRING_SIZE];
 		wchar_t version_buf[64];
 		const wchar_t* preload_buf;
 		HDC hdc;
@@ -11891,6 +11899,7 @@ static void _viv_status_update(void)
 		int pixel_rgb_wide;
 		int speed_wide;
 		int load_time_wide;
+		int zoom_wide;
 		int version_wide;
 		int minwide;
 		int parti;
@@ -11905,15 +11914,44 @@ static void _viv_status_update(void)
 		*pixel_rgb_buf = 0;
 		*speed_buf = 0;
 		*load_time_buf = 0;
+		*zoom_buf = 0;
 
 		if (_viv_load_speed_valid)
 		{
-			//if (_viv_load_speed > 0.0)
-			//{
-			//	string_printf(speed_buf, "Speed: %.2f MB/s", _viv_load_speed);
-			//}
+			string_printf(load_time_buf, "Load: %u ms", (unsigned int)_viv_load_elapsed / 1000);
+		}
 
-			string_printf(load_time_buf, "Load: %u ms", (unsigned int)_viv_load_elapsed/1000);
+		// --- ZOOM ---
+		if ((_viv_image_wide > 0) && (_viv_image_high > 0))
+		{
+			int rw, rh;
+			_viv_get_render_size(&rw, &rh);
+			rw = (int)(rw * _viv_dst_zoom_values[_viv_dst_zoom_x_pos]);
+			rh = (int)(rh * _viv_dst_zoom_values[_viv_dst_zoom_y_pos]);
+
+			if ((rw > 0) && (rh > 0))
+			{
+				int percent_x = (int)(((__int64)rw * 100 + _viv_image_wide / 2) / _viv_image_wide);
+				int percent_y = (int)(((__int64)rh * 100 + _viv_image_high / 2) / _viv_image_high);
+
+				if (_viv_1to1 || (_viv_doing == _VIV_DOING_1TO1SCROLL))
+				{
+					string_copy_utf8(zoom_buf, (const utf8_t*)"Zoom: 100%");
+				}
+				else if (percent_x == percent_y)
+				{
+					string_printf(zoom_buf, "Zoom: %d", percent_x);
+					string_cat_utf8(zoom_buf, (const utf8_t*)"%");
+				}
+				else
+				{
+					string_printf(zoom_buf, "Zoom: %d", percent_x);
+					string_cat_utf8(zoom_buf, (const utf8_t*)"% x ");
+					string_format_number(widebuf, percent_y);
+					string_cat(zoom_buf, widebuf);
+					string_cat_utf8(zoom_buf, (const utf8_t*)"%");
+				}
+			}
 		}
 
 		if ((_viv_image_wide) && (_viv_image_high))
@@ -12014,6 +12052,7 @@ static void _viv_status_update(void)
 		pixel_rgb_wide = 0;
 		speed_wide = 0;
 		load_time_wide = 0;
+		zoom_wide = 0;
 		version_wide = 0;
 		minwide = (72 * os_logical_wide) / 96;
 
@@ -12052,6 +12091,14 @@ static void _viv_status_update(void)
 					if (GetTextExtentPoint32(hdc, load_time_buf, string_length(load_time_buf), &size))
 					{
 						load_time_wide = size.cx + GetSystemMetrics(SM_CXEDGE) * 5;
+					}
+				}
+
+				if (*zoom_buf)
+				{
+					if (GetTextExtentPoint32(hdc, zoom_buf, string_length(zoom_buf), &size))
+					{
+						zoom_wide = size.cx + GetSystemMetrics(SM_CXEDGE) * 5;
 					}
 				}
 
@@ -12114,23 +12161,20 @@ static void _viv_status_update(void)
 			int fixed_wide;
 			int main_wide;
 
-			// Сначала считаем, сколько места занимают все фиксированные части
 			fixed_wide = version_wide + dimension_wide + frame_wide;
 			if (preload_buf) fixed_wide += preload_wide;
 			if (*speed_buf) fixed_wide += speed_wide;
 			if (*load_time_buf) fixed_wide += load_time_wide;
+			if (*zoom_buf) fixed_wide += zoom_wide;
 			if (*pixel_pos_buf) fixed_wide += pixel_pos_wide;
 			if (*pixel_rgb_buf) fixed_wide += pixel_rgb_wide;
 
-			// Оставляем хотя бы 40 пикселей под основную часть
 			main_wide = total_wide - fixed_wide;
 			if (main_wide < 40)
 			{
-				// Не влезает — отключаем менее важные части по одной
 				main_wide = 40;
 				fixed_wide = total_wide - main_wide;
 
-				// Пробуем убрать части в порядке приоритета (сначала менее важные)
 				if (*pixel_rgb_buf && (fixed_wide > total_wide - main_wide))
 				{
 					fixed_wide -= pixel_rgb_wide;
@@ -12154,6 +12198,12 @@ static void _viv_status_update(void)
 					fixed_wide -= load_time_wide;
 					*load_time_buf = 0;
 					load_time_wide = 0;
+				}
+				if (*zoom_buf && (fixed_wide > total_wide - main_wide))
+				{
+					fixed_wide -= zoom_wide;
+					*zoom_buf = 0;
+					zoom_wide = 0;
 				}
 				if (*speed_buf && (fixed_wide > total_wide - main_wide))
 				{
@@ -12190,6 +12240,13 @@ static void _viv_status_update(void)
 				if (*load_time_buf)
 				{
 					part_wide += load_time_wide;
+					part_array[parti] = part_wide;
+					parti++;
+				}
+
+				if (*zoom_buf)
+				{
+					part_wide += zoom_wide;
 					part_array[parti] = part_wide;
 					parti++;
 				}
@@ -12238,72 +12295,9 @@ static void _viv_status_update(void)
 		if (preload_buf) { _viv_status_set(parti, preload_buf); parti++; }
 		if (*speed_buf) { _viv_status_set(parti, speed_buf); parti++; }
 		if (*load_time_buf) { _viv_status_set(parti, load_time_buf); parti++; }
+		if (*zoom_buf) { _viv_status_set(parti, zoom_buf); parti++; }
 		if (*pixel_pos_buf) { _viv_status_set(parti, pixel_pos_buf); parti++; }
 		if (*pixel_rgb_buf) { _viv_status_set(parti, pixel_rgb_buf); parti++; }
-
-		_viv_status_set(parti, frame_buf);
-		parti++;
-
-		_viv_status_set(parti, dimension_buf);
-		parti++;
-
-		{
-			wchar_t* text = L"";
-
-			if (_viv_status_temp_text)
-			{
-				text = _viv_status_temp_text;
-			}
-			else if ((_viv_load_image_thread) && ((!_viv_load_is_preload) || (_viv_should_activate_preload_on_load)))
-			{
-				text = L"Loading...";
-			}
-			else if (_viv_file_not_found)
-			{
-				text = L"File not found.";
-			}
-			else if (_viv_load_failed)
-			{
-				text = L"Failed to load image.";
-			}
-			else if (_viv_is_slideshow)
-			{
-				text = L"Slideshow playing";
-			}
-
-			_viv_status_set(parti, text);
-		}
-		parti++;
-
-		if (preload_buf)
-		{
-			_viv_status_set(parti, preload_buf);
-			parti++;
-		}
-
-		if (*speed_buf)
-		{
-			_viv_status_set(parti, speed_buf);
-			parti++;
-		}
-
-		if (*load_time_buf)
-		{
-			_viv_status_set(parti, load_time_buf);
-			parti++;
-		}
-
-		if (*pixel_pos_buf)
-		{
-			_viv_status_set(parti, pixel_pos_buf);
-			parti++;
-		}
-
-		if (*pixel_rgb_buf)
-		{
-			_viv_status_set(parti, pixel_rgb_buf);
-			parti++;
-		}
 
 		_viv_status_set(parti, frame_buf);
 		parti++;
@@ -12706,6 +12700,9 @@ static void _viv_status_update_temp_animation_rate(void)
 
 static void _viv_zoom_in(int out,int have_xy,int x,int y)
 {
+	// DEBUG:
+	debug_printf("ZOOM_IN: out=%d zoom_pos_before=%d\n", out, _viv_zoom_pos);
+	
 	POINT pt;
 	
 	if (have_xy)
@@ -12843,6 +12840,7 @@ static void _viv_view_scroll(int mx,int my)
 
 	_viv_view_set(_viv_view_x - mx,_viv_view_y - my,0);
 	
+
 	if (config_scroll_window)
 	{
 		// this is not working for stamimail?!?

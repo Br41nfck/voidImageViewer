@@ -27,7 +27,7 @@
 ## Zoom & Navigation
 - [ ] Set/get zoom level via IPC
 - [ ] Change zoom in/out in 1/10/100% steps
-- [ ] Auto zoom: fit width, fit height, zoom inside, zoom outside
+- [X] Auto zoom: fit width, fit height, zoom inside, zoom outside
 - [ ] Option to keep custom zoom level when image changes
 - [ ] Left mouse drag: move window (zoom inside) or move image (other modes)
 - [ ] When panning, clamp to image edge (not center)
