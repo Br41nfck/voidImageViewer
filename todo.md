@@ -8,7 +8,7 @@
 - [X] Dark mode (system theme support)
 - [X] Dark skin (use system theme)
 - [ ] High DPI icons
-- [ ] Control toolbar customization
+- [X] Control toolbar customization
 - [ ] Keep window aspect size option
 - [ ] No minimum window size restriction
 
